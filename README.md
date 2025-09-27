@@ -1,4 +1,4 @@
-# Finace Monorepo
+# Cadence Monorepo
 
 This repository hosts a NestJS backend (backend/) and a SvelteKit frontend (frontend/) side by side, along with Docker services for PostgreSQL and pgAdmin.
 
