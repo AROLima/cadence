@@ -1,6 +1,6 @@
 # Finace Monorepo
 
-This repository hosts a NestJS backend (ackend/) and a SvelteKit frontend (rontend/) side by side, along with Docker services for PostgreSQL and pgAdmin.
+This repository hosts a NestJS backend (backend/) and a SvelteKit frontend (frontend/) side by side, along with Docker services for PostgreSQL and pgAdmin.
 
 ## Prerequisites
 
@@ -10,9 +10,9 @@ This repository hosts a NestJS backend (ackend/) and a SvelteKit frontend (ron
 
 ## Project Structure
 
-- ackend/ ? NestJS REST API scaffolded with the Nest CLI
-- rontend/ ? SvelteKit application scaffolded with the sv CLI
-- docker-compose.yml ? PostgreSQL 16 and pgAdmin services
+- backend/  NestJS REST API scaffolded with the Nest CLI
+- frontend/  SvelteKit application scaffolded with the sv CLI
+- docker-compose.yml  PostgreSQL 17 and pgAdmin services
 
 ## Getting Started
 
@@ -51,7 +51,7 @@ Services:
 
 Default pgAdmin credentials:
 
-- Email: dmin@orga.local
+- Email: admin@orga.local
 - Password: orga
 
 ### Connecting pgAdmin to PostgreSQL
