@@ -1,0 +1,1342 @@
+openapi: 3.0.0
+paths:
+  /auth/register:
+    post:
+      operationId: AuthController_register
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDto'
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+      summary: Create a new account
+      tags: &ref_0
+        - Auth
+  /auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+      summary: Authenticate with email and password
+      tags: *ref_0
+  /auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+      summary: Refresh authentication tokens
+      tags: *ref_0
+  /auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      security:
+        - bearer: []
+      summary: Invalidate active refresh tokens
+      tags: *ref_0
+  /users:
+    get:
+      operationId: UsersController_list
+      parameters:
+        - name: search
+          required: false
+          in: query
+          description: Free text search by name or email
+          schema:
+            type: string
+        - name: role
+          required: false
+          in: query
+          schema:
+            type: string
+            enum:
+              - USER
+              - ADMIN
+      responses:
+        '200':
+          description: Returns a paginated list of users.
+      security: &ref_1
+        - bearer: []
+      summary: List users
+      tags: &ref_2
+        - Users
+    post:
+      operationId: UsersController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDto'
+      responses:
+        '201':
+          description: User created successfully.
+      security: *ref_1
+      summary: Create a user
+      tags: *ref_2
+  /users/{id}:
+    get:
+      operationId: UsersController_detail
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns a single user.
+      security: *ref_1
+      summary: Get user by id
+      tags: *ref_2
+    patch:
+      operationId: UsersController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDto'
+      responses:
+        '200':
+          description: User updated successfully.
+      security: *ref_1
+      summary: Update a user
+      tags: *ref_2
+    delete:
+      operationId: UsersController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: User deleted successfully.
+      security: *ref_1
+      summary: Delete a user
+      tags: *ref_2
+  /me:
+    get:
+      operationId: MeController_profile
+      parameters: []
+      responses:
+        '200':
+          description: Returns the authenticated user profile.
+      security: &ref_3
+        - bearer: []
+      summary: Get current user profile
+      tags: &ref_4
+        - Me
+    patch:
+      operationId: MeController_update
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeDto'
+      responses:
+        '200':
+          description: Returns the updated profile.
+      security: *ref_3
+      summary: Update current user profile
+      tags: *ref_4
+  /tasks:
+    get:
+      operationId: TasksController_list
+      parameters:
+        - name: status
+          required: false
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - TODO
+                - IN_PROGRESS
+                - COMPLETED
+                - ARCHIVED
+        - name: priority
+          required: false
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - LOW
+                - MEDIUM
+                - HIGH
+                - URGENT
+        - name: dueFrom
+          required: false
+          in: query
+          schema:
+            format: date-time
+            type: string
+        - name: dueTo
+          required: false
+          in: query
+          schema:
+            format: date-time
+            type: string
+        - name: tag
+          required: false
+          in: query
+          description: Filter by a single tag name
+          schema:
+            type: string
+        - name: tags
+          required: false
+          in: query
+          description: Filter by one or more tag names
+          schema:
+            type: array
+            items:
+              type: string
+        - name: q
+          required: false
+          in: query
+          description: Full text search on title or description
+          schema:
+            type: string
+        - name: includeSubtasks
+          required: false
+          in: query
+          description: Include subtasks in top-level listing
+          schema:
+            default: false
+            type: boolean
+      responses:
+        '200':
+          description: Returns a paginated list of tasks that match the provided filters.
+      security: &ref_5
+        - bearer: []
+      summary: List tasks
+      tags: &ref_6
+        - Tasks
+    post:
+      operationId: TasksController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskDto'
+      responses:
+        '201':
+          description: Task created successfully.
+      security: *ref_5
+      summary: Create a new task
+      tags: *ref_6
+  /tasks/{id}:
+    get:
+      operationId: TasksController_detail
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns a single task.
+      security: *ref_5
+      summary: Get task by id
+      tags: *ref_6
+    patch:
+      operationId: TasksController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskDto'
+      responses:
+        '200':
+          description: Task updated successfully.
+      security: *ref_5
+      summary: Update an existing task
+      tags: *ref_6
+    delete:
+      operationId: TasksController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Task deleted successfully.
+      security: *ref_5
+      summary: Delete a task
+      tags: *ref_6
+  /tasks/{id}/tags/{tagId}:
+    post:
+      operationId: TasksController_attachTag
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+        - name: tagId
+          required: true
+          in: path
+          description: Tag identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Updated task with the tag attached.
+      security: *ref_5
+      summary: Assign a tag to a task
+      tags: *ref_6
+    delete:
+      operationId: TasksController_detachTag
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+        - name: tagId
+          required: true
+          in: path
+          description: Tag identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Updated task with the tag removed.
+      security: *ref_5
+      summary: Remove a tag from a task
+      tags: *ref_6
+  /tasks/{id}/comments:
+    get:
+      operationId: TasksController_comments
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns comments for the given task.
+      security: *ref_5
+      summary: List comments for a task
+      tags: *ref_6
+    post:
+      operationId: TasksController_addComment
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Task identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentDto'
+      responses:
+        '201':
+          description: Comment created successfully.
+      security: *ref_5
+      summary: Create a comment on a task
+      tags: *ref_6
+  /tasks/{id}/subtasks:
+    post:
+      operationId: TasksController_addSubtask
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Parent task identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskDto'
+      responses:
+        '201':
+          description: Subtask created successfully.
+      security: *ref_5
+      summary: Create a subtask
+      tags: *ref_6
+  /finance/accounts:
+    get:
+      operationId: FinanceController_listAccounts
+      parameters: []
+      responses:
+        '200':
+          description: Returns all accounts for the authenticated user.
+      security: &ref_7
+        - bearer: []
+      summary: List accounts
+      tags: &ref_8
+        - Finance
+    post:
+      operationId: FinanceController_createAccount
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountDto'
+      responses:
+        '201':
+          description: Account created successfully.
+      security: *ref_7
+      summary: Create an account
+      tags: *ref_8
+  /finance/accounts/{id}:
+    get:
+      operationId: FinanceController_getAccount
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Account identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns the requested account.
+      security: *ref_7
+      summary: Get account by id
+      tags: *ref_8
+    patch:
+      operationId: FinanceController_updateAccount
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Account identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountDto'
+      responses:
+        '200':
+          description: Account updated successfully.
+      security: *ref_7
+      summary: Update an account
+      tags: *ref_8
+    delete:
+      operationId: FinanceController_deleteAccount
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Account identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Account deleted successfully.
+      security: *ref_7
+      summary: Delete an account
+      tags: *ref_8
+  /finance/categories:
+    get:
+      operationId: FinanceController_listCategories
+      parameters: []
+      responses:
+        '200':
+          description: Returns all categories for the authenticated user.
+      security: *ref_7
+      summary: List categories
+      tags: *ref_8
+    post:
+      operationId: FinanceController_createCategory
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryDto'
+      responses:
+        '201':
+          description: Category created successfully.
+      security: *ref_7
+      summary: Create a category
+      tags: *ref_8
+  /finance/categories/tree:
+    get:
+      operationId: FinanceController_categoryTree
+      parameters: []
+      responses:
+        '200':
+          description: Returns categories organised as a hierarchy.
+      security: *ref_7
+      summary: Get category tree
+      tags: *ref_8
+  /finance/categories/{id}:
+    patch:
+      operationId: FinanceController_updateCategory
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Category identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryDto'
+      responses:
+        '200':
+          description: Category updated successfully.
+      security: *ref_7
+      summary: Update a category
+      tags: *ref_8
+    delete:
+      operationId: FinanceController_deleteCategory
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Category identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Category deleted successfully.
+      security: *ref_7
+      summary: Delete a category
+      tags: *ref_8
+  /finance/transactions:
+    get:
+      operationId: FinanceController_listTransactions
+      parameters:
+        - name: type
+          required: false
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - INCOME
+                - EXPENSE
+                - TRANSFER
+        - name: accountId
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: categoryId
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: dateFrom
+          required: false
+          in: query
+          description: ISO date-time; accepts dateFrom or from query param
+          schema:
+            format: date-time
+            type: string
+        - name: dateTo
+          required: false
+          in: query
+          description: ISO date-time; accepts dateTo or to query param
+          schema:
+            format: date-time
+            type: string
+        - name: minAmount
+          required: false
+          in: query
+          schema:
+            example: 10
+            type: number
+        - name: maxAmount
+          required: false
+          in: query
+          schema:
+            example: 500
+            type: number
+        - name: tags
+          required: false
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: q
+          required: false
+          in: query
+          description: Full text search by notes, attachments, or related names
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a paginated list of transactions.
+      security: *ref_7
+      summary: List transactions
+      tags: *ref_8
+    post:
+      operationId: FinanceController_createTransaction
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionDto'
+      responses:
+        '201':
+          description: Transaction created successfully.
+      security: *ref_7
+      summary: Create a transaction
+      tags: *ref_8
+  /finance/transactions/{id}:
+    get:
+      operationId: FinanceController_getTransaction
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Transaction identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns the requested transaction.
+      security: *ref_7
+      summary: Get transaction by id
+      tags: *ref_8
+    patch:
+      operationId: FinanceController_updateTransaction
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Transaction identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionDto'
+      responses:
+        '200':
+          description: Transaction updated successfully.
+      security: *ref_7
+      summary: Update a transaction
+      tags: *ref_8
+    delete:
+      operationId: FinanceController_deleteTransaction
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Transaction identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Transaction deleted successfully.
+      security: *ref_7
+      summary: Delete a transaction
+      tags: *ref_8
+  /finance/budgets:
+    get:
+      operationId: FinanceController_listBudgets
+      parameters:
+        - name: year
+          required: false
+          in: query
+          schema:
+            example: 2025
+            type: number
+        - name: month
+          required: false
+          in: query
+          schema:
+            example: 3
+            type: number
+      responses:
+        '200':
+          description: Returns budgets for the authenticated user.
+      security: *ref_7
+      summary: List budgets
+      tags: *ref_8
+    post:
+      operationId: FinanceController_createBudget
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBudgetDto'
+      responses:
+        '201':
+          description: Budget created successfully.
+      security: *ref_7
+      summary: Create a budget
+      tags: *ref_8
+  /finance/budgets/{id}:
+    get:
+      operationId: FinanceController_getBudget
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Budget identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns the requested budget.
+      security: *ref_7
+      summary: Get budget by id
+      tags: *ref_8
+    patch:
+      operationId: FinanceController_updateBudget
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Budget identifier
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBudgetDto'
+      responses:
+        '200':
+          description: Budget updated successfully.
+      security: *ref_7
+      summary: Update a budget
+      tags: *ref_8
+    delete:
+      operationId: FinanceController_deleteBudget
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Budget identifier
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Budget deleted successfully.
+      security: *ref_7
+      summary: Delete a budget
+      tags: *ref_8
+  /reports/tasks/productivity:
+    get:
+      operationId: ReportsController_tasksProductivity
+      parameters:
+        - name: from
+          required: false
+          in: query
+          schema:
+            format: date-time
+            type: string
+        - name: to
+          required: false
+          in: query
+          schema:
+            format: date-time
+            type: string
+      responses:
+        '200':
+          description: Returns completed tasks per day and the average lead time for the requested period.
+      security: &ref_9
+        - bearer: []
+      summary: Get tasks productivity metrics
+      tags: &ref_10
+        - Reports
+  /reports/finance/expenses-by-category:
+    get:
+      operationId: ReportsController_financeExpensesByCategory
+      parameters:
+        - name: month
+          required: true
+          in: query
+          description: Month number (1-12)
+          schema:
+            minimum: 1
+            maximum: 12
+            type: number
+        - name: year
+          required: true
+          in: query
+          description: Year (e.g. 2025)
+          schema:
+            minimum: 1970
+            type: number
+      responses:
+        '200':
+          description: Returns expenses aggregated by category for the selected month.
+      security: *ref_9
+      summary: Get expenses grouped by category for a month
+      tags: *ref_10
+  /reports/finance/monthly-series:
+    get:
+      operationId: ReportsController_financeMonthlySeries
+      parameters:
+        - name: fromMonth
+          required: true
+          in: query
+          description: Start month (1-12)
+          schema:
+            minimum: 1
+            maximum: 12
+            type: number
+        - name: fromYear
+          required: true
+          in: query
+          description: Start year
+          schema:
+            minimum: 1970
+            type: number
+        - name: toMonth
+          required: true
+          in: query
+          description: End month (1-12)
+          schema:
+            minimum: 1
+            maximum: 12
+            type: number
+        - name: toYear
+          required: true
+          in: query
+          description: End year
+          schema:
+            minimum: 1970
+            type: number
+      responses:
+        '200':
+          description: Returns monthly income, expense, and net totals for the requested range.
+      security: *ref_9
+      summary: Get finance monthly income/expense series
+      tags: *ref_10
+  /reports/finance/balance-by-account:
+    get:
+      operationId: ReportsController_financeBalanceByAccount
+      parameters: []
+      responses:
+        '200':
+          description: Returns balances and transfer-aware totals for each account.
+      security: *ref_9
+      summary: Get current balances by account
+      tags: *ref_10
+  /health:
+    get:
+      operationId: AppController_health
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Health
+info:
+  title: Finace API
+  description: OpenAPI documentation for the Finace backend services.
+  version: 1.0.0
+  contact: {}
+tags: []
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    jwt:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: Provide the access token obtained from the auth endpoints.
+  schemas:
+    RegisterDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: new.user@example.com
+        password:
+          type: string
+          example: StrongPassword1!
+          minLength: 8
+        name:
+          type: string
+          example: New User
+      required:
+        - email
+        - password
+    AuthenticatedUserDto:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        email:
+          type: string
+          example: user@example.com
+        name:
+          type: string
+          example: Jane Doe
+        role:
+          type: string
+          enum:
+            - USER
+            - ADMIN
+          example: USER
+        createdAt:
+          type: string
+      required:
+        - id
+        - email
+        - name
+        - role
+        - createdAt
+    AuthResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/AuthenticatedUserDto'
+      required:
+        - accessToken
+        - refreshToken
+        - user
+    LoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: ChangeMe123!
+      required:
+        - email
+        - password
+    RefreshTokenDto:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token if not provided via Authorization header
+          minLength: 20
+    CreateUserDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          example: StrongPassword1!
+          minLength: 8
+        name:
+          type: string
+          example: Jane Doe
+        role:
+          type: string
+          enum:
+            - USER
+            - ADMIN
+          example: USER
+      required:
+        - email
+        - password
+        - name
+    UpdateUserDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          example: StrongPassword1!
+          minLength: 8
+        name:
+          type: string
+          example: Jane Doe
+        role:
+          type: string
+          enum:
+            - USER
+            - ADMIN
+          example: USER
+    UpdateMeDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Jane Doe
+        password:
+          type: string
+          minLength: 8
+          description: New password
+        currentPassword:
+          type: string
+          description: Required when providing a new password
+    CreateTaskDto:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Review quarterly budget
+        description:
+          type: string
+          example: Ensure all expense reports are collected
+          maxLength: 5000
+        status:
+          type: string
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - COMPLETED
+            - ARCHIVED
+          default: TODO
+        priority:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+          default: MEDIUM
+        dueDate:
+          type: string
+          format: date-time
+        repeatRRule:
+          type: string
+          description: RFC5545 RRULE definition for repeating tasks
+        tagNames:
+          example:
+            - finance
+            - reporting
+          type: array
+          items:
+            type: string
+        parentId:
+          type: number
+          description: Parent task identifier for subtasks
+      required:
+        - title
+    UpdateTaskDto:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Review quarterly budget
+        description:
+          type: string
+          example: Ensure all expense reports are collected
+          maxLength: 5000
+        status:
+          type: string
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - COMPLETED
+            - ARCHIVED
+        priority:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+        dueDate:
+          type: string
+          format: date-time
+        repeatRRule:
+          type: object
+          description: RFC5545 RRULE definition for repeating tasks
+        tagNames:
+          example:
+            - finance
+            - reporting
+          type: array
+          items:
+            type: string
+        parentId:
+          type: object
+          description: Parent task identifier or null to detach
+          nullable: true
+    CreateCommentDto:
+      type: object
+      properties:
+        text:
+          type: string
+          example: Let us sync before Friday.
+      required:
+        - text
+    CreateAccountDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Main Checking
+        type:
+          type: string
+          example: checking
+          description: Account type label
+        initialBalance:
+          type: number
+          example: 1000.5
+      required:
+        - name
+        - type
+    UpdateAccountDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Main Checking
+        type:
+          type: string
+          example: checking
+          description: Account type label
+        initialBalance:
+          type: number
+          example: 1500.75
+    CreateCategoryDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Utilities
+        parentId:
+          type: object
+          description: Parent category id
+      required:
+        - name
+    UpdateCategoryDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Utilities
+        parentId:
+          type: object
+          description: Parent category id
+          nullable: true
+    CreateTransactionDto:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: &ref_11
+            - INCOME
+            - EXPENSE
+            - TRANSFER
+        accountId:
+          type: number
+          example: 1
+          description: Account identifier
+        targetAccountId:
+          type: number
+          example: 2
+          description: Target account for transfers
+        categoryId:
+          type: number
+          example: 1
+          description: Category identifier
+        amount:
+          type: number
+          example: 125.75
+        occurredAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          maxLength: 500
+        tags:
+          example: &ref_12
+            - groceries
+            - family
+          type: array
+          items:
+            type: string
+        attachmentUrl:
+          type: string
+          example: https://example.com/receipt.pdf
+        installmentsTotal:
+          type: number
+          example: 12
+        installmentNumber:
+          type: number
+          example: 1
+        recurrenceRRule:
+          type: string
+          description: RFC5545 RRULE for recurring transactions
+      required:
+        - type
+        - accountId
+        - amount
+        - occurredAt
+    UpdateTransactionDto:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: *ref_11
+        accountId:
+          type: number
+          example: 1
+          description: Account identifier
+        targetAccountId:
+          type: number
+          example: 2
+          description: Target account for transfers
+        categoryId:
+          type: number
+          example: 1
+          description: Category identifier
+        amount:
+          type: number
+          example: 300.25
+        occurredAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          maxLength: 500
+        tags:
+          example: *ref_12
+          type: array
+          items:
+            type: string
+        attachmentUrl:
+          type: string
+          example: https://example.com/receipt.pdf
+        installmentsTotal:
+          type: number
+          example: 12
+        installmentNumber:
+          type: number
+          example: 1
+        recurrenceRRule:
+          type: string
+          description: RFC5545 RRULE for recurring transactions
+    CreateBudgetDto:
+      type: object
+      properties:
+        categoryId:
+          type: number
+          example: 1
+        year:
+          type: number
+          example: 2025
+        month:
+          type: number
+          example: 3
+        plannedAmount:
+          type: number
+          example: 1500
+      required:
+        - categoryId
+        - year
+        - month
+        - plannedAmount
+    UpdateBudgetDto:
+      type: object
+      properties:
+        categoryId:
+          type: number
+          example: 1
+        year:
+          type: number
+          example: 2025
+        month:
+          type: number
+          example: 5
+        plannedAmount:
+          type: number
+          example: 1600

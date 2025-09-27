@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+  url = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+
+  ADMIN
+}
+
+enum TaskStatus {
+  TODO
+
+  IN_PROGRESS
+
+  COMPLETED
+
+  ARCHIVED
+}
+
+enum TaskPriority {
+  LOW
+
+  MEDIUM
+
+  HIGH
+
+  URGENT
+}
+
+enum TransactionType {
+  INCOME
+
+  EXPENSE
+
+  TRANSFER
+}
+
+enum TransactionGroupType {
+  TRANSFER
+
+  INSTALLMENT
+}
+
+enum TransferDirection {
+  IN
+
+  OUT
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  email String @unique
+
+  passwordHash String
+
+  name String
+
+  role Role @default(USER)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+
+  tasks Task[]
+
+  taskTags TaskTag[]
+
+  taskComments TaskComment[] @relation("UserTaskComments")
+
+  financeAccounts FinanceAccount[]
+
+  financeCategories FinanceCategory[]
+
+  financeTransactions FinanceTransaction[]
+
+  budgets Budget[]
+}
+
+model RefreshToken {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  token String @unique
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Task {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  parentId Int?
+
+  title String
+
+  description String? @db.Text
+
+  status TaskStatus @default(TODO)
+
+  priority TaskPriority @default(MEDIUM)
+
+  dueDate DateTime?
+
+  repeatRRule String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parent Task? @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+
+  subtasks Task[] @relation("TaskSubtasks")
+
+  tags TaskTag[]
+
+  comments TaskComment[]
+
+  @@index([userId, status])
+  @@index([userId, priority])
+  @@index([userId, dueDate])
+  @@index([parentId])
+}
+
+model TaskTag {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  name String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tasks Task[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model TaskComment {
+  id Int @id @default(autoincrement())
+
+  taskId Int
+
+  userId Int
+
+  text String @db.Text
+
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  author User @relation("UserTaskComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model FinanceAccount {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  name String
+
+  type String
+
+  initialBalance Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions FinanceTransaction[]
+
+  transferTransactions FinanceTransaction[] @relation("TransferAccount")
+
+  @@unique([userId, name])
+}
+
+model FinanceCategory {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  name String
+
+  parentId Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parent FinanceCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+
+  children FinanceCategory[] @relation("CategoryHierarchy")
+
+  transactions FinanceTransaction[]
+
+  budgets Budget[]
+
+  @@unique([userId, name])
+  @@index([parentId])
+}
+
+model FinanceTransaction {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  accountId Int
+
+  type TransactionType
+
+  amount Decimal @db.Decimal(18, 2)
+
+  occurredAt DateTime
+
+  categoryId Int?
+
+  notes String? @db.Text
+
+  tags String[] @default([])
+
+  attachmentUrl String?
+
+  installmentsTotal Int?
+
+  installmentNumber Int?
+
+  recurrenceRRule String? @db.Text
+
+  groupId String? @db.Uuid
+
+  groupType TransactionGroupType?
+
+  transferAccountId Int?
+
+  transferDirection TransferDirection?
+
+  transferAccount FinanceAccount? @relation("TransferAccount", fields: [transferAccountId], references: [id], onDelete: SetNull)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  account FinanceAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  category FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([groupId])
+}
+
+model Budget {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  categoryId Int
+
+  month Int
+
+  year Int
+
+  plannedAmount Decimal @db.Decimal(18, 2)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category FinanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId])
+}
