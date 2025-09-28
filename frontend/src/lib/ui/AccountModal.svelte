@@ -15,7 +15,7 @@
   type FormState = {
     name: string;
     type: string;
-    initialBalance: string;
+    initialBalance: string | number;
   };
 
   let form: FormState = {
@@ -66,8 +66,12 @@
     dispatch('close');
   };
 
-  const parseAmount = (value: string): number | undefined => {
-    const raw = value?.trim() ?? '';
+  const parseAmount = (value: unknown): number | undefined => {
+    if (value === null || value === undefined) return undefined;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : undefined;
+    }
+    const raw = String(value).trim();
     if (!raw) return undefined;
     let canonical = raw.replace(/\s+/g, '');
     if (canonical.includes('.') && canonical.includes(',')) {
@@ -80,17 +84,21 @@
   };
 
   const handleSubmit = () => {
-    if (!form.name.trim() || !form.type.trim()) {
-      return;
+    try {
+      if (!form.name.trim() || !form.type.trim()) {
+        return;
+      }
+
+      const payload: AccountPayload = {
+        name: form.name.trim(),
+        type: form.type.trim(),
+        initialBalance: parseAmount(form.initialBalance),
+      };
+
+      dispatch('submit', payload);
+    } catch (e) {
+      console.error('[account-modal] submit failed', e);
     }
-
-    const payload: AccountPayload = {
-      name: form.name.trim(),
-      type: form.type.trim(),
-      initialBalance: parseAmount(form.initialBalance),
-    };
-
-    dispatch('submit', payload);
   };
 </script>
 

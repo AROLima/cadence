@@ -211,6 +211,9 @@
     const installmentsTotal = form.type === 'TRANSFER' ? undefined : parseIntegerOrNull(form.installmentsTotal) ?? undefined;
     const installmentNumber = form.type === 'TRANSFER' ? undefined : parseIntegerOrNull(form.installmentNumber) ?? undefined;
 
+    const url = form.attachmentUrl.trim();
+    const isValidUrl = /^https?:\/\//i.test(url);
+
     const payload: TransactionPayload = {
       type: form.type,
       accountId,
@@ -218,7 +221,7 @@
       occurredAt: occurredAtIso,
       notes: form.notes.trim() || undefined,
       tags,
-      attachmentUrl: form.attachmentUrl.trim() || undefined,
+      attachmentUrl: isValidUrl ? url : undefined,
       recurrenceRRule: form.recurrenceRRule.trim() || undefined,
       categoryId,
       targetAccountId,

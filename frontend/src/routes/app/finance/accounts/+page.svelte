@@ -26,11 +26,12 @@
     minimumFractionDigits: 2,
   });
 
-  const formatAmount = (value: number) => currencyFormatter.format(value);
+  const formatAmount = (value: number) => currencyFormatter.format(Number.isFinite(value) ? value : 0);
 
-  const totalBalance = () => accounts.reduce((sum, account) => sum + (account.balance ?? 0), 0);
-  const totalIncome = () => accounts.reduce((sum, account) => sum + (account.totals?.income ?? 0), 0);
-  const totalExpense = () => accounts.reduce((sum, account) => sum + (account.totals?.expense ?? 0), 0);
+  // Derive totals reactively to avoid any stale evaluations
+  $: totalBalanceValue = accounts.reduce((sum, account) => sum + (account.balance ?? 0), 0);
+  $: totalIncomeValue = accounts.reduce((sum, account) => sum + (account.totals?.income ?? 0), 0);
+  $: totalExpenseValue = accounts.reduce((sum, account) => sum + (account.totals?.expense ?? 0), 0);
 
   onMount(() => {
     void loadAccounts();
@@ -135,19 +136,19 @@
   <div class="grid gap-4 sm:grid-cols-3">
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
       <p class="text-xs uppercase tracking-wide text-slate-400">Total balance</p>
-      <p class="mt-2 text-2xl font-semibold text-slate-100">{formatAmount(totalBalance())}</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-100">{formatAmount(totalBalanceValue)}</p>
     </div>
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
       <p class="text-xs uppercase tracking-wide text-slate-400">Total income</p>
-      <p class="mt-2 text-2xl font-semibold text-emerald-300">{formatAmount(totalIncome())}</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-300">{formatAmount(totalIncomeValue)}</p>
     </div>
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
       <p class="text-xs uppercase tracking-wide text-slate-400">Total expense</p>
-      <p class="mt-2 text-2xl font-semibold text-red-300">{formatAmount(totalExpense())}</p>
+      <p class="mt-2 text-2xl font-semibold text-red-300">{formatAmount(totalExpenseValue)}</p>
     </div>
   </div>
 
-  <div class="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60">
+  <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
     {#if loading}
       <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-400">Loading accounts...</div>
     {:else if error}
@@ -164,16 +165,16 @@
     {:else if accounts.length === 0}
       <div class="px-6 py-16 text-center text-sm text-slate-400">No accounts yet. Add your first account to start tracking balances.</div>
     {:else}
-      <table class="w-full divide-y divide-slate-800 text-sm">
+      <table class="min-w-full divide-y divide-slate-800 text-sm">
         <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
           <tr>
             <th class="px-4 py-3 text-left">Name</th>
-            <th class="px-4 py-3 text-left">Type</th>
-            <th class="px-4 py-3 text-left">Initial</th>
+            <th class="px-4 py-3 text-left hidden sm:table-cell">Type</th>
+            <th class="px-4 py-3 text-left hidden md:table-cell">Initial</th>
             <th class="px-4 py-3 text-left">Balance</th>
-            <th class="px-4 py-3 text-left">Income</th>
-            <th class="px-4 py-3 text-left">Expense</th>
-            <th class="px-4 py-3 text-left">Updated</th>
+            <th class="px-4 py-3 text-left hidden md:table-cell">Income</th>
+            <th class="px-4 py-3 text-left hidden md:table-cell">Expense</th>
+            <th class="px-4 py-3 text-left hidden lg:table-cell">Updated</th>
             <th class="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
@@ -181,12 +182,12 @@
           {#each accounts as account (account.id)}
             <tr>
               <td class="px-4 py-3 text-slate-100">{account.name}</td>
-              <td class="px-4 py-3 text-slate-300">{account.type}</td>
-              <td class="px-4 py-3 text-slate-200">{formatAmount(account.initialBalance ?? 0)}</td>
+              <td class="px-4 py-3 text-slate-300 hidden sm:table-cell">{account.type}</td>
+              <td class="px-4 py-3 text-slate-200 hidden md:table-cell">{formatAmount(account.initialBalance ?? 0)}</td>
               <td class="px-4 py-3 text-slate-200">{formatAmount(account.balance ?? 0)}</td>
-              <td class="px-4 py-3 text-emerald-300">{formatAmount(account.totals?.income ?? 0)}</td>
-              <td class="px-4 py-3 text-red-300">{formatAmount(account.totals?.expense ?? 0)}</td>
-              <td class="px-4 py-3 text-slate-400">{formatDate(account.createdAt)}</td>
+              <td class="px-4 py-3 text-emerald-300 hidden md:table-cell">{formatAmount(account.totals?.income ?? 0)}</td>
+              <td class="px-4 py-3 text-red-300 hidden md:table-cell">{formatAmount(account.totals?.expense ?? 0)}</td>
+              <td class="px-4 py-3 text-slate-400 hidden lg:table-cell">{formatDate(account.createdAt)}</td>
               <td class="px-4 py-3 text-right">
                 <div class="flex justify-end gap-2">
                   <button

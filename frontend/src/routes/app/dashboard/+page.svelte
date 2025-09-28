@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { browser } from '$app/environment';
   import {
     fetchTasksProductivity,
@@ -7,12 +7,14 @@
     fetchExpensesByCategory,
     fetchAccountBalances,
   } from '$lib/api/reports';
+  import { getCategoryTree, listAccounts } from '$lib/api/finance';
   import type {
     TasksProductivity,
     FinanceMonthlyPoint,
     ExpenseByCategory,
     AccountBalanceSummary,
   } from '$lib/types/reports';
+  import type { FinanceCategoryNode, FinanceAccount } from '$lib/types/finance';
 
   let loading = true;
   let error: string | null = null;
@@ -22,7 +24,8 @@
   let expensesByCategory: ExpenseByCategory[] = [];
   let accountBalances: AccountBalanceSummary[] = [];
 
-  let tasksCompleted30d = 0;
+  let tasksCompleted30d = 0; // legacy var retained for backward logic
+  let tasksCompletedWindow = 0;
   let averageLeadTimeLabel = '--';
   let currentMonthExpenses = 0;
   let totalBalance = 0;
@@ -44,17 +47,53 @@
   let categoryCanvas: HTMLCanvasElement | undefined;
   let burndownCanvas: HTMLCanvasElement | undefined;
 
+  // Filters
+  const nowRef = new Date();
+  let filterEndMonth = nowRef.getUTCMonth() + 1; // 1..12
+  let filterEndYear = nowRef.getUTCFullYear();
+  let filterMonthsBack = 12; // 6 | 12 | 24
+  let filterTasksWindowDays = 14; // 7 | 14 | 30
+
+  const monthNames = Array.from({ length: 12 }, (_, i) =>
+    new Date(Date.UTC(2000, i, 1)).toLocaleDateString(locale, { month: 'short' }),
+  );
+  const yearsOptions = Array.from({ length: 6 }, (_, i) => filterEndYear - 3 + i);
+  const monthsBackOptions = [6, 12, 24];
+  const tasksWindowOptions = [7, 14, 30];
+  $: selectedMonthLabel = `${monthNames[(filterEndMonth - 1 + 12) % 12]}/${String(filterEndYear).slice(-2)}`;
+  // Category and account filters for dashboard sections
+  let categoriesTree: FinanceCategoryNode[] = [];
+  let categoryFilterId: number | '' = '';
+  let includeSubcategories = true;
+  let accountsList: FinanceAccount[] = [];
+  let accountFilterId: number | '' = '';
+
+  function flattenCategories(nodes: FinanceCategoryNode[], depth = 0): Array<{ id: number; name: string }> {
+    const out: Array<{ id: number; name: string }> = [];
+    for (const n of nodes) {
+      out.push({ id: n.id, name: `${'\u00A0'.repeat(depth * 2)}${n.name}` });
+      if (n.children?.length) out.push(...flattenCategories(n.children, depth + 1));
+    }
+    return out;
+  }
+
   onMount(async () => {
     const now = new Date();
     try {
       const module = await import('chart.js/auto');
       Chart = module.default;
+      // Preload categories and accounts for filters (non-blocking)
+      const [catsRes, accsRes] = await Promise.allSettled([getCategoryTree(), listAccounts()]);
+      if (catsRes.status === 'fulfilled') categoriesTree = catsRes.value;
+      if (accsRes.status === 'fulfilled') accountsList = accsRes.value;
       await loadDashboard(now);
     } catch (err) {
       console.error('[dashboard] failed to initialise', err);
       error = err instanceof Error ? err.message : 'Failed to load dashboard';
     } finally {
       loading = false;
+      // Ensure canvases are bound before attempting to draw charts
+      await tick();
       updateCharts();
     }
   });
@@ -70,26 +109,28 @@
 
       const to = new Date(referenceDate);
       const from = new Date(referenceDate);
-      from.setDate(from.getDate() - 30);
+      from.setDate(from.getDate() - filterTasksWindowDays);
 
       const productivityPromise = fetchTasksProductivity({
         from: from.toISOString(),
         to: to.toISOString(),
       });
 
-      const endMonth = referenceDate.getUTCMonth();
-      const endYear = referenceDate.getUTCFullYear();
-      const startDate = new Date(Date.UTC(endYear, endMonth - 11, 1));
+  // Monthly series based on filters
+  const endMonthIdx = filterEndMonth - 1; // 0-based
+  const endYear = filterEndYear;
+  const startDate = new Date(Date.UTC(endYear, endMonthIdx, 1));
+  startDate.setUTCMonth(startDate.getUTCMonth() - (filterMonthsBack - 1));
 
       const monthlySeriesPromise = fetchFinanceMonthlySeries({
         fromMonth: startDate.getUTCMonth() + 1,
         fromYear: startDate.getUTCFullYear(),
-        toMonth: endMonth + 1,
+        toMonth: endMonthIdx + 1,
         toYear: endYear,
       });
 
       const expensesPromise = fetchExpensesByCategory({
-        month: endMonth + 1,
+        month: endMonthIdx + 1,
         year: endYear,
       });
 
@@ -137,10 +178,49 @@
         throw new Error('Falha ao carregar os dados do dashboard');
       }
 
+      // If there are no completions in the most recent 14 days window,
+      // try a wider time range and anchor the burndown to the last completion date.
+      burndownFallbackNote = null;
+      burndownAnchor = null;
+      if (tasksProductivity) {
+        const twoWeeksAgo = new Date(referenceDate);
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - filterTasksWindowDays);
+        const hasRecent = tasksProductivity.daily.some((d) => new Date(`${d.date}T00:00:00Z`) >= twoWeeksAgo);
+        if (!hasRecent) {
+          // Widen to 120 days in case the demo data exists but is older
+          const wideFrom = new Date(referenceDate);
+          wideFrom.setDate(wideFrom.getDate() - 120);
+          try {
+            const widened = await fetchTasksProductivity({
+              from: wideFrom.toISOString(),
+              to: to.toISOString(),
+            });
+            if (widened.daily.length) {
+              tasksProductivity = widened;
+              // Anchor the burndown to the latest completion date
+              const last = widened.daily[widened.daily.length - 1];
+              const lastDate = new Date(`${last.date}T00:00:00Z`);
+              burndownAnchor = lastDate;
+              const display = lastDate.toLocaleDateString(locale, { year: '2-digit', month: 'short', day: 'numeric' });
+              burndownFallbackNote = `No completions in the last ${filterTasksWindowDays} days — showing ${filterTasksWindowDays} days ending on ${display}.`;
+            }
+          } catch {
+            // ignore fallback errors; we'll keep the original state
+          }
+        }
+      }
+
       computeKpis(referenceDate);
+      // Wait for DOM to reflect new conditional sections (canvas bindings)
+      await tick();
+      updateCharts();
     } catch (err) {
       console.error('[dashboard] data fetch failed', err);
       error = err instanceof Error ? err.message : 'Failed to load dashboard data';
+    }
+    finally {
+      // Always leave loading state, even if some sections failed
+      loading = false;
     }
   }
 
@@ -150,15 +230,20 @@
         (total, item) => total + item.completed,
         0,
       );
+      tasksCompletedWindow = tasksCompleted30d;
 
       averageLeadTimeLabel = formatLeadTime(tasksProductivity.averageLeadTimeHours);
     } else {
-      tasksCompleted30d = 0;
+  tasksCompleted30d = 0;
+  tasksCompletedWindow = 0;
       averageLeadTimeLabel = '--';
     }
 
-    currentMonthExpenses = expensesByCategory.reduce((sum, item) => sum + item.amount, 0);
-    totalBalance = accountBalances.reduce((sum, item) => sum + (item.balance ?? 0), 0);
+  currentMonthExpenses = expensesByCategory.reduce((sum, item) => sum + item.amount, 0);
+    const balancesForKpi = accountFilterId
+      ? accountBalances.filter((a) => a.accountId === Number(accountFilterId))
+      : accountBalances;
+    totalBalance = balancesForKpi.reduce((sum, item) => sum + (item.balance ?? 0), 0);
 
     buildChartData(referenceDate);
   }
@@ -168,19 +253,32 @@
     datasets: { income: [], expense: [], net: [] },
   };
 
+  $: hasMonthlyData =
+    monthlyChartData.labels.length > 0 &&
+    ((monthlyChartData.datasets.income?.some((v) => v !== 0) ?? false) ||
+      (monthlyChartData.datasets.expense?.some((v) => v !== 0) ?? false) ||
+      (monthlyChartData.datasets.net?.some((v) => v !== 0) ?? false));
+
   let categoryChartData: { labels: string[]; values: number[] } = { labels: [], values: [] };
+  $: hasCategoryData = categoryChartData.labels.length > 0 && (categoryChartData.values?.some((v) => v !== 0) ?? false);
 
   let burndownChartData: { labels: string[]; remaining: number[]; ideal: number[] } = {
     labels: [],
     remaining: [],
     ideal: [],
   };
+  // Render the burndown chart whenever we have labels; values may be all zeros.
+  $: hasBurndownData = burndownChartData.labels.length > 0;
+
+  // Optional anchor date for burndown when we widen the window
+  let burndownAnchor: Date | null = null;
+  let burndownFallbackNote: string | null = null;
 
   function buildChartData(referenceDate: Date) {
     monthlyChartData = buildMonthlyChartData();
     categoryChartData = buildCategoryChartData();
-    burndownChartData = buildBurndownData(referenceDate);
-    updateCharts();
+    burndownChartData = buildBurndownData(burndownAnchor ?? referenceDate);
+    // Chart updates are coordinated by callers after tick()
   }
 
   function buildMonthlyChartData() {
@@ -191,32 +289,68 @@
     const income = monthlySeries.map((point) => point.income);
     const expense = monthlySeries.map((point) => point.expense);
     const net = monthlySeries.map((point) => point.net);
-    return { labels, datasets: { income, expense, net } };
+    // Build friendly labels like "Sep/25"
+    const friendly = labels.map((period) => {
+      const [y, m] = period.split('-').map((v) => Number(v));
+      const d = new Date(Date.UTC(y, (m || 1) - 1, 1));
+      const mon = d.toLocaleDateString(locale, { month: 'short' });
+      const yy = String(d.getUTCFullYear()).slice(-2);
+      return `${mon}/${yy}`;
+    });
+    return { labels: friendly, datasets: { income, expense, net } };
   }
 
   function buildCategoryChartData() {
     if (!expensesByCategory.length) {
       return { labels: [], values: [] };
     }
-    const labels = expensesByCategory.map((item) => item.categoryName);
-    const values = expensesByCategory.map((item) => item.amount);
+    let rows = expensesByCategory;
+    if (categoryFilterId) {
+      const targetId = Number(categoryFilterId);
+      const allowed = new Set<number>();
+      const addDesc = (nodes: FinanceCategoryNode[]): boolean => {
+        for (const n of nodes) {
+          if (n.id === targetId) {
+            const stack: FinanceCategoryNode[] = [n];
+            while (stack.length) {
+              const cur = stack.pop()!;
+              allowed.add(cur.id);
+              if (includeSubcategories && cur.children?.length) stack.push(...cur.children);
+            }
+            return true;
+          }
+          if (n.children?.length && addDesc(n.children)) return true;
+        }
+        return false;
+      };
+      addDesc(categoriesTree);
+      rows = rows.filter((r) => (r.categoryId != null ? allowed.has(r.categoryId) : false));
+    }
+    const labels = rows.map((item) => item.categoryName);
+    const values = rows.map((item) => item.amount);
     return { labels, values };
   }
 
-  function buildBurndownData(referenceDate: Date) {
-    if (!tasksProductivity) {
-      return { labels: [], remaining: [], ideal: [] };
-    }
+  function handleCategoryFilterChange() {
+    categoryChartData = buildCategoryChartData();
+    tick().then(() => updateCategoryChart());
+  }
 
-    const dailyMap = new Map<string, number>();
-    for (const entry of tasksProductivity.daily) {
-      dailyMap.set(entry.date, entry.completed);
-    }
+  function buildBurndownData(referenceDate: Date) {
+    // Always build a 14-day window, even if we don't have data yet.
+    // This shows a flat zero line instead of an empty placeholder.
+    const tempDate = new Date(referenceDate);
+    tempDate.setHours(0, 0, 0, 0);
 
     const labels: string[] = [];
     const dailyValues: number[] = [];
-    const tempDate = new Date(referenceDate);
-    tempDate.setHours(0, 0, 0, 0);
+
+    const dailyMap = new Map<string, number>();
+    if (tasksProductivity) {
+      for (const entry of tasksProductivity.daily) {
+        dailyMap.set(entry.date, entry.completed);
+      }
+    }
 
     for (let offset = 13; offset >= 0; offset--) {
       const day = new Date(tempDate);
@@ -264,7 +398,7 @@
       monthlyChart.destroy();
       monthlyChart = null;
     }
-    if (!monthlyChartData.labels.length) {
+    if (!hasMonthlyData) {
       return;
     }
     monthlyChart = new Chart(monthlyCanvas, {
@@ -275,25 +409,35 @@
           {
             label: 'Income',
             data: monthlyChartData.datasets.income,
-            borderColor: 'rgba(34, 197, 94, 0.8)',
-            backgroundColor: 'rgba(34, 197, 94, 0.2)',
-            tension: 0.3,
+            borderColor: 'rgba(34, 197, 94, 0.9)',
+            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+            borderWidth: 2,
+            tension: 0.35,
+            pointRadius: 2,
+            pointHoverRadius: 4,
             fill: false,
           },
           {
             label: 'Expense',
             data: monthlyChartData.datasets.expense,
-            borderColor: 'rgba(239, 68, 68, 0.8)',
-            backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            tension: 0.3,
+            borderColor: 'rgba(239, 68, 68, 0.9)',
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            borderWidth: 2,
+            tension: 0.35,
+            pointRadius: 2,
+            pointHoverRadius: 4,
             fill: false,
           },
           {
-            label: 'Net',
+            label: 'Net (income - expense)',
             data: monthlyChartData.datasets.net,
-            borderColor: 'rgba(59, 130, 246, 0.8)',
-            backgroundColor: 'rgba(59, 130, 246, 0.2)',
-            tension: 0.3,
+            borderColor: 'rgba(59, 130, 246, 0.9)',
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            tension: 0.35,
+            pointRadius: 0,
+            pointHoverRadius: 0,
             fill: false,
           },
         ],
@@ -301,24 +445,43 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: 4 },
+        animation: { duration: 500, easing: 'easeOutQuart' },
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: true, position: 'bottom', labels: { color: '#cbd5f5' } },
-          tooltip: { mode: 'index', intersect: false },
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: { color: '#cbd5f5', usePointStyle: true, boxWidth: 8, boxHeight: 8 },
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: (ctx) => {
+                const label = ctx.dataset?.label ?? '';
+                const v = Number(ctx.parsed?.y ?? 0);
+                return `${label}: ${currencyFormatter.format(v)}`;
+              },
+            },
+          },
         },
         scales: {
           x: {
-            ticks: { color: '#94a3b8' },
-            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            ticks: { color: '#94a3b8', maxRotation: 0 },
+            grid: { color: 'rgba(148, 163, 184, 0.08)' },
+            border: { color: 'rgba(148, 163, 184, 0.2)' },
           },
           y: {
             ticks: {
               color: '#94a3b8',
               callback: (value) => currencyFormatter.format(Number(value)),
             },
-            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            grid: { color: 'rgba(148, 163, 184, 0.08)' },
+            border: { color: 'rgba(148, 163, 184, 0.2)' },
           },
         },
+        elements: { point: { hitRadius: 6 } },
       },
     });
   }
@@ -331,11 +494,11 @@
       categoryChart.destroy();
       categoryChart = null;
     }
-    if (!categoryChartData.labels.length) {
+    if (!hasCategoryData) {
       return;
     }
     categoryChart = new Chart(categoryCanvas, {
-      type: 'pie',
+      type: 'doughnut',
       data: {
         labels: categoryChartData.labels,
         datasets: [
@@ -344,8 +507,9 @@
             backgroundColor: categoryChartData.labels.map((_, index) =>
               `hsl(${(index * 47) % 360} 70% 55%)`,
             ),
-            borderColor: '#0f172a',
-            borderWidth: 1,
+            borderColor: 'rgba(15, 23, 42, 0.6)',
+            borderWidth: 1.5,
+            hoverOffset: 6,
           },
         ],
       },
@@ -353,8 +517,20 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#cbd5f5' } },
+          legend: { position: 'bottom', labels: { color: '#cbd5f5', usePointStyle: true, boxWidth: 10, boxHeight: 10 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = Number(ctx.parsed ?? 0);
+                const ds = ctx.dataset?.data as number[] | undefined;
+                const total = (ds ?? []).reduce((s, n) => s + Number(n || 0), 0);
+                const pct = total ? ((v / total) * 100).toFixed(1) : '0.0';
+                return `${ctx.label}: ${currencyFormatter.format(v)} (${pct}%)`;
+              },
+            },
+          },
         },
+        animation: { duration: 500, easing: 'easeOutQuart' },
       },
     });
   }
@@ -367,7 +543,7 @@
       burndownChart.destroy();
       burndownChart = null;
     }
-    if (!burndownChartData.labels.length) {
+    if (!hasBurndownData) {
       return;
     }
     burndownChart = new Chart(burndownCanvas, {
@@ -378,16 +554,19 @@
           {
             label: 'Remaining',
             data: burndownChartData.remaining,
-            borderColor: 'rgba(239, 68, 68, 0.8)',
-            backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            tension: 0.3,
-            fill: false,
+            borderColor: 'rgba(239, 68, 68, 0.9)',
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            borderWidth: 2,
+            tension: 0.25,
+            pointRadius: 0,
+            fill: true,
           },
           {
             label: 'Ideal',
             data: burndownChartData.ideal,
             borderColor: 'rgba(148, 163, 184, 0.6)',
             borderDash: [6, 4],
+            borderWidth: 2,
             tension: 0,
             fill: false,
           },
@@ -397,13 +576,20 @@
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
+        animation: { duration: 500, easing: 'easeOutQuart' },
         plugins: {
-          legend: { display: true, position: 'bottom', labels: { color: '#cbd5f5' } },
+          legend: { display: true, position: 'bottom', labels: { color: '#cbd5f5', usePointStyle: true, boxWidth: 8, boxHeight: 8 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset?.label ?? ''}: ${numberFormatter.format(Number(ctx.parsed?.y ?? 0))}`,
+            },
+          },
         },
         scales: {
           x: {
-            ticks: { color: '#94a3b8' },
+            ticks: { color: '#94a3b8', maxRotation: 0 },
             grid: { color: 'rgba(148, 163, 184, 0.08)' },
+            border: { color: 'rgba(148, 163, 184, 0.2)' },
           },
           y: {
             ticks: {
@@ -411,6 +597,7 @@
               callback: (value) => numberFormatter.format(Number(value)),
             },
             grid: { color: 'rgba(148, 163, 184, 0.08)' },
+            border: { color: 'rgba(148, 163, 184, 0.2)' },
           },
         },
       },
@@ -424,6 +611,15 @@
     monthlyChart = null;
     categoryChart = null;
     burndownChart = null;
+  }
+
+  async function refreshDashboard() {
+    const now = new Date();
+    await loadDashboard(now);
+    // loadDashboard already awaits tick and triggers updateCharts, but
+    // keep an extra tick here to be safe when refresh is spammed.
+    await tick();
+    updateCharts();
   }
 
   function formatLeadTime(hours: number) {
@@ -443,76 +639,199 @@
   }
 
   const asCurrency = (value: number) => currencyFormatter.format(value);
+
+  $: if (categoryFilterId !== undefined) {
+    // Recompute chart data when filters change
+    categoryChartData = buildCategoryChartData();
+  }
+
+  // Keep Expenses KPI in sync with category filter (sum of visible slices)
+  $: currentMonthExpenses = (categoryChartData.values ?? []).reduce((sum, v) => sum + v, 0);
+
+  $: if (accountFilterId !== undefined) {
+    // Recompute KPIs when account filter changes
+    const balancesForKpi = accountFilterId
+      ? accountBalances.filter((a) => a.accountId === Number(accountFilterId))
+      : accountBalances;
+    totalBalance = balancesForKpi.reduce((sum, item) => sum + (item.balance ?? 0), 0);
+  }
 </script>
 
 <div class="space-y-8">
-  <div class="grid gap-4 md:grid-cols-4">
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Tasks completed (30 days)</p>
-      <p class="mt-2 text-2xl font-semibold text-slate-100">{numberFormatter.format(tasksCompleted30d)}</p>
+      <p class="text-xs uppercase tracking-wide text-slate-400">Tasks completed (last {filterTasksWindowDays} days)</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-100">{numberFormatter.format(tasksCompletedWindow)}</p>
     </div>
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
       <p class="text-xs uppercase tracking-wide text-slate-400">Avg completion time</p>
       <p class="mt-2 text-2xl font-semibold text-slate-100">{averageLeadTimeLabel}</p>
     </div>
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Current month expenses</p>
+      <p class="text-xs uppercase tracking-wide text-slate-400">Expenses — {selectedMonthLabel}</p>
       <p class="mt-2 text-2xl font-semibold text-red-300">{asCurrency(currentMonthExpenses)}</p>
     </div>
     <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Total balance</p>
-      <p class="mt-2 text-2xl font-semibold text-emerald-300">{asCurrency(totalBalance)}</p>
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-slate-400">Total balance</p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-300">{asCurrency(totalBalance)}</p>
+        </div>
+        <button
+          type="button"
+          class="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-200 transition hover:border-slate-500 hover:text-white"
+          on:click={refreshDashboard}
+          aria-label="Refresh dashboard"
+        >
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+    <div class="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+      <div class="flex items-center gap-2">
+        <label for="filter-month" class="w-20 text-xs text-slate-400">Month</label>
+        <select id="filter-month" bind:value={filterEndMonth} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+          {#each monthNames as label, i}
+            <option value={i + 1}>{label}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="filter-year" class="w-20 text-xs text-slate-400">Year</label>
+        <select id="filter-year" bind:value={filterEndYear} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+          {#each yearsOptions as y}
+            <option value={y}>{y}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="filter-monthsback" class="w-24 text-xs text-slate-400">Months back</label>
+        <select id="filter-monthsback" bind:value={filterMonthsBack} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+          {#each monthsBackOptions as opt}
+            <option value={opt}>{opt}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="flex items-center gap-2 md:col-span-2 lg:col-span-1">
+        <label for="filter-taskwindow" class="w-28 text-xs text-slate-400">Tasks window</label>
+        <select id="filter-taskwindow" bind:value={filterTasksWindowDays} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+          {#each tasksWindowOptions as opt}
+            <option value={opt}>{opt} days</option>
+          {/each}
+        </select>
+      </div>
+      <div class="flex items-center justify-end">
+        <button type="button" class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white" on:click={refreshDashboard}>Apply</button>
+      </div>
     </div>
   </div>
 
   {#if loading}
-    <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6 text-sm text-slate-400">Loading dashboard...</div>
+    <!-- Skeletons -->
+    <div class="grid gap-4 md:grid-cols-4">
+      {#each Array(4) as _}
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+          <div class="h-3 w-32 animate-pulse rounded bg-slate-800"></div>
+          <div class="mt-4 h-7 w-24 animate-pulse rounded bg-slate-800"></div>
+        </div>
+      {/each}
+    </div>
+  <div class="mt-6 grid gap-6 md:grid-cols-2">
+      {#each Array(3) as _, i}
+  <div class={`rounded-xl border border-slate-800 bg-slate-950/60 p-4 ${i === 2 ? 'md:col-span-2' : ''}`}>
+          <div class="mb-4 h-4 w-48 animate-pulse rounded bg-slate-800"></div>
+          <div class="h-72 animate-pulse rounded bg-slate-900"></div>
+        </div>
+      {/each}
+  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 md:col-span-2">
+        <div class="mb-3 h-4 w-40 animate-pulse rounded bg-slate-800"></div>
+        <div class="h-40 animate-pulse rounded bg-slate-900"></div>
+      </div>
+    </div>
   {:else if error}
     <div class="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-sm text-red-200">{error}</div>
   {:else}
-    <div class="grid gap-6 lg:grid-cols-2">
+  <div class="grid gap-6 md:grid-cols-2">
       <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-sm font-semibold text-slate-200">Monthly income vs expense</h3>
         </div>
         <div class="h-72">
-          {#if monthlyChartData.labels.length}
+          {#if hasMonthlyData}
             <canvas bind:this={monthlyCanvas}></canvas>
           {:else}
-            <p class="text-sm text-slate-500">Not enough data to render the series yet.</p>
+            <div class="flex h-full items-center justify-center text-sm text-slate-500">
+              Not enough data to render the series yet.
+            </div>
           {/if}
         </div>
       </div>
 
       <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-        <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-slate-200">Expenses by category (current month)</h3>
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-slate-200">Expenses by category ({selectedMonthLabel})</h3>
+          <div class="flex items-center gap-2 text-xs">
+            <label for="filter-category" class="text-slate-400">Category</label>
+            <select id="filter-category" bind:value={categoryFilterId} class="rounded-md border border-slate-800 bg-slate-900/70 p-1.5 text-xs text-slate-200" on:change={handleCategoryFilterChange}>
+              <option value="">All</option>
+              {#each flattenCategories(categoriesTree) as c}
+                <option value={c.id}>{c.name}</option>
+              {/each}
+            </select>
+            <label class="ml-2 inline-flex items-center gap-1 text-slate-400">
+              <input type="checkbox" bind:checked={includeSubcategories} on:change={handleCategoryFilterChange} class="h-3 w-3 rounded border-slate-700 bg-slate-900" />
+              <span>Include sub</span>
+            </label>
+          </div>
         </div>
         <div class="h-72">
-          {#if categoryChartData.labels.length}
+          {#if hasCategoryData}
             <canvas bind:this={categoryCanvas}></canvas>
           {:else}
-            <p class="text-sm text-slate-500">No expenses recorded for the current month.</p>
+            <div class="flex h-full items-center justify-center text-sm text-slate-500">
+              No expenses recorded for the current month.
+            </div>
           {/if}
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
+  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 md:col-span-2">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-slate-200">Tasks burndown (last 14 days)</h3>
+          <h3 class="text-sm font-semibold text-slate-200">Tasks burndown (last {filterTasksWindowDays} days)</h3>
+          {#if burndownFallbackNote}
+            <p class="text-xs text-slate-400">{burndownFallbackNote}</p>
+          {/if}
         </div>
         <div class="h-60">
-          {#if burndownChartData.labels.length}
+          {#if hasBurndownData}
             <canvas bind:this={burndownCanvas}></canvas>
           {:else}
-            <p class="text-sm text-slate-500">Not enough task completion data to render the burndown.</p>
+            <div class="flex h-full items-center justify-center text-sm text-slate-500">
+              Not enough task completion data to render the burndown.
+            </div>
           {/if}
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
-        <h3 class="mb-3 text-sm font-semibold text-slate-200">Account balances</h3>
-        <div class="overflow-x-auto">
+  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 md:col-span-2">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-200">Account balances</h3>
+          <div class="flex items-center gap-2 text-xs">
+            <label for="filter-account" class="text-slate-400">Account</label>
+            <select id="filter-account" bind:value={accountFilterId} class="rounded-md border border-slate-800 bg-slate-900/70 p-1.5 text-xs text-slate-200">
+              <option value="">All</option>
+              {#each accountsList as acc}
+                <option value={acc.id}>{acc.name}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+        <!-- Desktop/Table -->
+        <div class="hidden overflow-x-auto sm:block">
           <table class="min-w-full divide-y divide-slate-800 text-sm">
             <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
               <tr>
@@ -525,7 +844,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-900/70">
-              {#each accountBalances as account (account.accountId)}
+              {#each (accountFilterId ? accountBalances.filter(a => a.accountId === Number(accountFilterId)) : accountBalances) as account (account.accountId)}
                 <tr>
                   <td class="px-3 py-2 text-slate-100">{account.name}</td>
                   <td class="px-3 py-2 text-slate-300">{account.type}</td>
@@ -537,9 +856,53 @@
               {/each}
             </tbody>
           </table>
-          {#if !accountBalances.length}
+          {#if !(accountFilterId ? accountBalances.some(a => a.accountId === Number(accountFilterId)) : accountBalances.length)}
             <p class="mt-3 text-sm text-slate-500">No accounts available yet.</p>
           {/if}
+        </div>
+        <!-- Mobile Cards -->
+        <div class="sm:hidden">
+          {#if (accountFilterId ? accountBalances.some(a => a.accountId === Number(accountFilterId)) : accountBalances.length)}
+            <ul class="space-y-3">
+              {#each (accountFilterId ? accountBalances.filter(a => a.accountId === Number(accountFilterId)) : accountBalances) as account (account.accountId)}
+                <li class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm font-semibold text-slate-100">{account.name}</p>
+                      <p class="text-xs text-slate-400">{account.type}</p>
+                    </div>
+                    <p class="text-sm font-semibold text-emerald-300">{asCurrency(account.balance)}</p>
+                  </div>
+                  <div class="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+                    <div class="rounded-lg bg-slate-900/60 p-2">
+                      <p class="text-slate-400">Income</p>
+                      <p class="text-emerald-300">{asCurrency(account.totals.income)}</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-900/60 p-2">
+                      <p class="text-slate-400">Expense</p>
+                      <p class="text-red-300">{asCurrency(account.totals.expense)}</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-900/60 p-2">
+                      <p class="text-slate-400">Transfers</p>
+                      <p class="text-slate-200">{asCurrency(account.totals.transferNet)}</p>
+                    </div>
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="text-sm text-slate-500">No accounts available yet.</p>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
+        <h3 class="mb-3 text-sm font-semibold text-slate-200">Quick actions</h3>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <a href="/app/finance/transactions" class="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-200 transition hover:border-slate-600 hover:text-white">New transaction</a>
+          <a href="/app/finance/accounts" class="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-200 transition hover:border-slate-600 hover:text-white">New account</a>
+          <a href="/app/tasks" class="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-200 transition hover:border-slate-600 hover:text-white">New task</a>
         </div>
       </div>
     </div>

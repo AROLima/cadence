@@ -42,6 +42,7 @@
 
   let modalOpen = false;
   let modalSaving = false;
+  let showFilters = false;
 
   const locale = browser ? navigator.language : 'en-US';
   const currencyFormatter = new Intl.NumberFormat(locale, {
@@ -269,6 +270,17 @@
   </div>
 
   <form class="space-y-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4" on:submit|preventDefault={applyFilters}>
+    <div class="flex items-center justify-between sm:hidden">
+      <p class="text-sm text-slate-300">Filters</p>
+      <button
+        type="button"
+        class={`rounded-lg border px-3 py-1.5 text-xs transition ${showFilters ? 'border-indigo-500 text-indigo-200' : 'border-slate-700 text-slate-300'}`}
+        on:click={() => (showFilters = !showFilters)}
+      >
+        {showFilters ? 'Hide' : 'Show'}
+      </button>
+    </div>
+    <div class={`space-y-4 ${showFilters ? '' : 'sm:space-y-0 sm:block hidden'}`}>
     <div class="grid gap-4 md:grid-cols-5">
       <div class="space-y-2">
         <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="filter-account">Account</label>
@@ -359,9 +371,10 @@
         Apply filters
       </button>
     </div>
+    </div>
   </form>
 
-  <div class="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60">
+  <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
     {#if loading}
       <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-400">Loading transactions...</div>
     {:else if error}
@@ -378,13 +391,13 @@
     {:else if transactions.length === 0}
       <div class="px-6 py-16 text-center text-sm text-slate-400">No transactions yet. Adjust filters or create a new one.</div>
     {:else}
-      <table class="w-full divide-y divide-slate-800 text-sm">
+      <table class="min-w-full divide-y divide-slate-800 text-sm">
         <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
           <tr>
             <th class="px-4 py-3 text-left">Date</th>
             <th class="px-4 py-3 text-left">Description</th>
-            <th class="px-4 py-3 text-left">Category</th>
-            <th class="px-4 py-3 text-left">Account</th>
+            <th class="px-4 py-3 text-left hidden sm:table-cell">Category</th>
+            <th class="px-4 py-3 text-left hidden md:table-cell">Account</th>
             <th class="px-4 py-3 text-left">Amount</th>
           </tr>
         </thead>
@@ -398,8 +411,8 @@
                   <div class="mt-1 text-xs text-slate-500">{transaction.tags.join(', ')}</div>
                 {/if}
               </td>
-              <td class="px-4 py-3 text-slate-200">{transaction.categoryName ?? (transaction.type === 'TRANSFER' ? 'Transfer' : 'Uncategorised')}</td>
-              <td class="px-4 py-3 text-slate-200">
+              <td class="px-4 py-3 text-slate-200 hidden sm:table-cell">{transaction.categoryName ?? (transaction.type === 'TRANSFER' ? 'Transfer' : 'Uncategorised')}</td>
+              <td class="px-4 py-3 text-slate-200 hidden md:table-cell">
                 <div>{transaction.accountName}</div>
                 {#if transaction.transferAccountName}
                   <div class="text-xs text-slate-500">? {transaction.transferAccountName}</div>

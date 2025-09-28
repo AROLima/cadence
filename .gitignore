@@ -86,4 +86,8 @@ Desktop.ini
 *.local
 *.cache
 
-SPEC.md
+# Large temp/html or docs artifacts (avoid committing accidental dumps)
+*.large.html
+*temp*.html
+*temp*.md
+*.dump
