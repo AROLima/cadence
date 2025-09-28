@@ -1,4 +1,8 @@
-﻿export { default as AppShell } from './ui/AppShell.svelte';
+export { default as AppShell } from './ui/AppShell.svelte';
+export { default as TaskDrawer } from './ui/TaskDrawer.svelte';
+export { default as TransactionModal } from './ui/TransactionModal.svelte';
+export { default as AccountModal } from './ui/AccountModal.svelte';
+export { default as CategoryModal } from './ui/CategoryModal.svelte';
 export { default as DataTable } from './ui/DataTable.svelte';
 export { FormInput, FormSelect } from './ui/form';
 export { default as ConfirmDialog } from './ui/ConfirmDialog.svelte';

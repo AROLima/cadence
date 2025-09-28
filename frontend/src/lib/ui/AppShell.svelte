@@ -1,21 +1,19 @@
-﻿<script lang="ts">
+<script lang="ts">
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import {
-    Menu,
-    X,
-    LogOut,
-    LayoutDashboard,
-    ListChecks,
-    Wallet,
-    Receipt,
-    PiggyBank,
-    CreditCard,
-    Settings,
-  } from '@lucide/svelte';
-  import type { NavSection } from '$lib/ui/types';
-  import type { ComponentType } from 'svelte';
+  import Menu from '$lib/icons/Menu.svelte';
+  import X from '$lib/icons/X.svelte';
+  import LogOut from '$lib/icons/LogOut.svelte';
+  import LayoutDashboard from '$lib/icons/LayoutDashboard.svelte';
+  import ListChecks from '$lib/icons/ListChecks.svelte';
+  import Wallet from '$lib/icons/Wallet.svelte';
+  import Receipt from '$lib/icons/Receipt.svelte';
+  import PiggyBank from '$lib/icons/PiggyBank.svelte';
+  import CreditCard from '$lib/icons/CreditCard.svelte';
+  import Settings from '$lib/icons/Settings.svelte';
+  import type { Component } from 'svelte';
+  import type { NavSection, ResolvableIcon } from '$lib/ui/types';
 
   export let navigation: NavSection[] = [];
   export let user: {
@@ -29,7 +27,7 @@
   let sidebarOpen = false;
   $: pathname = $page.url.pathname;
 
-  const iconRegistry: Record<string, ComponentType | undefined> = {
+  const iconRegistry: Record<string, Component | undefined> = {
     dashboard: LayoutDashboard,
     tasks: ListChecks,
     finance: Wallet,
@@ -41,7 +39,13 @@
     logout: LogOut,
   };
 
-  const resolveIcon = (icon?: string) => (icon ? iconRegistry[icon] : undefined);
+  const resolveIcon = (icon?: ResolvableIcon) => {
+    if (!icon) return undefined;
+    if (typeof icon === 'string') {
+      return iconRegistry[icon];
+    }
+    return icon;
+  };
 
   const closeSidebar = () => {
     sidebarOpen = false;
@@ -75,7 +79,7 @@
         type="button"
         class="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm md:hidden"
         aria-label="Close navigation"
-        onclick={closeSidebar}
+        on:click={closeSidebar}
       ></button>
     {/if}
 
@@ -85,7 +89,7 @@
     >
       <div class="flex items-center justify-between md:justify-start md:gap-2">
         <div>
-          <p class="text-xs uppercase tracking-wider text-slate-500">Finace</p>
+          <p class="text-xs uppercase tracking-wider text-slate-500">Cadence</p>
           <h1 class="text-lg font-semibold">{title}</h1>
         </div>
 
@@ -93,7 +97,7 @@
           class="md:hidden rounded-lg border border-slate-800 p-2 text-slate-300"
           type="button"
           aria-label="Close sidebar"
-          onclick={closeSidebar}
+          on:click={closeSidebar}
         >
           <X class="h-4 w-4" />
         </button>
@@ -116,7 +120,7 @@
                     class={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-slate-300 transition hover:bg-slate-800/80 hover:text-white ${
                       isActive(link.href) ? 'bg-indigo-500/20 text-indigo-200' : ''
                     }`}
-                    onclick={() => navigate(link.href)}
+                    on:click={() => navigate(link.href)}
                   >
                     <span class="flex items-center gap-2">
                       {#if resolveIcon(link.icon)}
@@ -139,7 +143,7 @@
               class={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-slate-300 transition hover:bg-slate-800/80 hover:text-white ${
                 isActive(section.href) ? 'bg-indigo-500/20 text-indigo-200' : ''
               }`}
-              onclick={() => navigate(section.href)}
+              on:click={() => navigate(section.href)}
             >
               <span class="flex items-center gap-2">
                 {#if resolveIcon(section.icon)}
@@ -165,7 +169,7 @@
             class="rounded-lg border border-slate-800 p-2 text-slate-200 md:hidden"
             type="button"
             aria-label="Toggle navigation"
-            onclick={toggleSidebar}
+            on:click={toggleSidebar}
           >
             <Menu class="h-4 w-4" />
           </button>
@@ -178,7 +182,7 @@
         <button
           class="flex items-center gap-2 rounded-lg border border-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-slate-600 hover:text-white"
           type="button"
-          onclick={handleLogout}
+          on:click={handleLogout}
         >
           <LogOut class="h-4 w-4" />
           Logout

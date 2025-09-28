@@ -1,6 +1,6 @@
 ﻿<script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { AlertTriangle } from '@lucide/svelte';
+  import AlertTriangle from '$lib/icons/AlertTriangle.svelte';
 
   export let open = false;
   export let title = 'Confirm your action';

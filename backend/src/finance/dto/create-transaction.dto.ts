@@ -21,18 +21,33 @@ export class CreateTransactionDto {
   type!: TransactionType;
 
   @ApiProperty({ example: 1, description: 'Account identifier' })
+  @Transform(({ value }): number | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  })
   @IsInt()
   @Min(1)
   accountId!: number;
 
-  @ApiPropertyOptional({ example: 2, description: 'Target account for transfers' })
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Target account for transfers',
+  })
   @IsOptional()
+  @Transform(({ value }): number | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  })
   @IsInt()
   @Min(1)
   targetAccountId?: number;
 
   @ApiPropertyOptional({ example: 1, description: 'Category identifier' })
   @IsOptional()
+  @Transform(({ value }): number | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  })
   @IsInt()
   @Min(1)
   categoryId?: number;
@@ -78,12 +93,20 @@ export class CreateTransactionDto {
 
   @ApiPropertyOptional({ example: 12 })
   @IsOptional()
+  @Transform(({ value }): number | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  })
   @IsInt()
   @Min(1)
   installmentsTotal?: number;
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
+  @Transform(({ value }): number | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  })
   @IsInt()
   @Min(1)
   installmentNumber?: number;

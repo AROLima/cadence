@@ -1,4 +1,6 @@
-﻿<script lang="ts">
+﻿<svelte:options runes={false} />
+
+<script lang="ts">
   type Option = {
     label: string;
     value: string;
@@ -6,6 +8,7 @@
   };
 
   export let id: string | undefined;
+  export let name: string | undefined;
   export let label: string | undefined;
   export let options: Option[] = [];
   export let placeholder: string | undefined;
@@ -15,30 +18,39 @@
   export let disabled = false;
   export let required = false;
   export let className = '';
+  export let selectClass = '';
 
-  const selectId = id ?? `select-${crypto.randomUUID()}`;
-  const hasError = Boolean(error);
+  $: fallbackId = name ? `${name}-select` : undefined;
+  $: selectId = id ?? fallbackId;
+  $: hasError = Boolean(error);
+  $: containerClass = ['space-y-2', className].filter(Boolean).join(' ').trim();
+  $: wrapperClass = [
+    'rounded-lg border bg-slate-900/80 px-3 text-sm transition',
+    hasError ? 'border-red-400 focus-within:border-red-400' : 'border-slate-700 focus-within:border-indigo-500',
+    disabled ? 'opacity-60 cursor-not-allowed' : ''
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
 </script>
 
-<div class={`space-y-2 ${className}`.trim()}>
+<div class={containerClass}>
   {#if label}
-    <label class="text-sm font-medium text-slate-200" for={selectId}
-      >{label}{required ? '*' : ''}</label
-    >
+    <label class="text-sm font-medium text-slate-200" for={selectId}>
+      {label}{required ? '*' : ''}
+    </label>
   {/if}
 
-  <div
-    class={`rounded-lg border bg-slate-900/80 px-3 text-sm transition focus-within:border-indigo-500 ${
-      hasError ? 'border-red-500/60 focus-within:border-red-500' : 'border-slate-800'
-    } ${disabled ? 'opacity-60' : ''}`}
-  >
+  <div class={wrapperClass}>
     <select
       {...$$restProps}
       id={selectId}
-      class="w-full bg-transparent py-2 text-slate-100 focus:outline-none"
+      name={name}
+      class={`w-full bg-transparent py-2 text-slate-100 focus:outline-none ${selectClass} ${$$restProps.class ?? ''}`.trim()}
       disabled={disabled}
       required={required}
       bind:value
+      aria-invalid={hasError || undefined}
     >
       {#if placeholder}
         <option value="" disabled selected={!value}>{placeholder}</option>

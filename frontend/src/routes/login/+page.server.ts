@@ -1,66 +1,97 @@
-﻿import { fail, redirect, type Actions } from '@sveltejs/kit';
+import { fail, redirect, type Actions, type ServerLoad } from '@sveltejs/kit';
+import { z } from 'zod';
 import { env } from '$env/dynamic/private';
 
-const API_BASE_URL = (env.API_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+// Prefer IPv4 loopback by default to avoid Windows ::1 issues; allow override from private or public env
+const base = env.API_BASE_URL || env.PUBLIC_API_BASE_URL || 'http://127.0.0.1:3000';
+const API_BASE_URL = base.replace(/\/$/, '');
 const secure = env.NODE_ENV === 'production';
 
-export const load = async ({ cookies }) => {
+export const load: ServerLoad = async ({ cookies }) => {
   const accessToken = cookies.get('accessToken');
-  const refreshToken = cookies.get('refreshToken');
-
-  if (accessToken || refreshToken) {
+  if (accessToken) {
     throw redirect(302, '/app/dashboard');
   }
-
   return {};
 };
 
 export const actions: Actions = {
   default: async ({ request, fetch, cookies }) => {
-    const formData = await request.formData();
-    const email = String(formData.get('email') ?? '').trim();
-    const password = String(formData.get('password') ?? '');
+    const form = await request.formData();
+    const email = String(form.get('email') ?? '').trim();
+    const password = String(form.get('password') ?? '');
 
     if (!email || !password) {
-      return fail(400, { message: 'Email and password are required.' });
+      return fail(400, { success: false, message: 'Email and password are required.' });
     }
 
+    let response: Response | null = null;
+    let payload: unknown = null;
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
-      const payload = await response.json();
-
-      if (!response.ok || !payload?.success) {
-        const message = payload?.message ?? 'Invalid credentials.';
-        return fail(response.status ?? 400, { message });
+      try {
+        payload = await response.json();
+      } catch {
+        // ignore json parse errors
       }
-
-      const { accessToken, refreshToken, user } = payload.data;
-
-      cookies.set('accessToken', accessToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure,
-        path: '/',
-        maxAge: 60 * 60,
+    } catch {
+      return fail(503, {
+        success: false,
+        message:
+          'Não foi possível conectar ao servidor. Verifique se o backend está em execução (localhost:3000).',
+        email,
       });
-
-      cookies.set('refreshToken', refreshToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure,
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30,
-      });
-
-      throw redirect(302, '/app/dashboard');
-    } catch (error) {
-      console.error('[login action] Unexpected error', error);
-      return fail(500, { message: 'Unable to login. Please try again later.' });
     }
+
+    const LoginResponseSchema = z.object({
+      success: z.boolean(),
+      message: z.string().optional(),
+      data: z
+        .object({
+          accessToken: z.string(),
+          refreshToken: z.string(),
+          user: z.unknown().optional(),
+        })
+        .optional(),
+    });
+
+    const parsed = LoginResponseSchema.safeParse(payload);
+
+    if (!response!.ok || !parsed.success || !parsed.data.success || !parsed.data.data) {
+      const message = (parsed.success ? parsed.data.message : null) ?? 'Invalid credentials.';
+      return fail(response!.status >= 400 && response!.status < 600 ? response!.status : 400, {
+        success: false,
+        message,
+        email,
+      });
+    }
+
+    const { accessToken, refreshToken } = parsed.data.data;
+
+    if (typeof accessToken !== 'string' || typeof refreshToken !== 'string') {
+      return fail(500, { success: false, message: 'Unexpected login response.' });
+    }
+
+    cookies.set('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+      path: '/',
+      maxAge: 60 * 60, // 1 hour
+    });
+
+    cookies.set('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+
+    throw redirect(303, '/app/dashboard');
   },
 };

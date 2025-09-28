@@ -20,8 +20,17 @@ export class PrismaService
   }
 
   enableShutdownHooks(app: INestApplication) {
-    process.on('beforeExit', () => {
-      void app.close();
-    });
+    const shutdown = async (signal: string) => {
+      console.log(`\nShutting down gracefully on ${signal}...`);
+      try {
+        await app.close();
+      } finally {
+        await this.$disconnect();
+      }
+      process.exit(0);
+    };
+
+    process.on('SIGINT', () => void shutdown('SIGINT'));
+    process.on('SIGTERM', () => void shutdown('SIGTERM'));
   }
 }

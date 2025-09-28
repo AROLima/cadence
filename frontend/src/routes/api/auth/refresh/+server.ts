@@ -1,7 +1,8 @@
 ﻿import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
-const API_BASE_URL = (env.API_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+const base = env.API_BASE_URL || env.PUBLIC_API_BASE_URL || 'http://127.0.0.1:3000';
+const API_BASE_URL = base.replace(/\/$/, '');
 const secure = env.NODE_ENV === 'production';
 
 export const POST = async ({ cookies, fetch }) => {

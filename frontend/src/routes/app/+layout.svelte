@@ -27,12 +27,10 @@
   ];
 
   if (browser) {
-    $effect(() => {
-      authStore.setAuth({
-        user: data.user,
-        accessToken: data.tokens.accessToken,
-        refreshToken: data.tokens.refreshToken,
-      });
+    authStore.setAuth({
+      user: data.user,
+      accessToken: data.tokens.accessToken,
+      refreshToken: data.tokens.refreshToken,
     });
   }
 
@@ -48,6 +46,6 @@
   };
 </script>
 
-<AppShell {navigation} user={data.user} onLogout={handleLogout} title="Finace">
+<AppShell {navigation} user={data.user} onLogout={handleLogout} title="Cadence">
   <slot />
 </AppShell>

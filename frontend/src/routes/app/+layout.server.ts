@@ -2,7 +2,8 @@
 import { env } from '$env/dynamic/private';
 import type { LayoutServerLoad } from './$types';
 
-const API_BASE_URL = (env.API_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+const base = env.API_BASE_URL || env.PUBLIC_API_BASE_URL || 'http://127.0.0.1:3000';
+const API_BASE_URL = base.replace(/\/$/, '');
 const secure = env.NODE_ENV === 'production';
 
 type AuthPayload = {
@@ -55,11 +56,13 @@ const refreshTokens = async (
 };
 
 export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
-  let accessToken = cookies.get('accessToken');
-  const refreshToken = cookies.get('refreshToken');
-  let currentRefreshToken = refreshToken ?? null;
+  const accessTokenCookie = cookies.get('accessToken');
+  const refreshTokenCookie = cookies.get('refreshToken');
 
-  if (!accessToken && !refreshToken) {
+  let accessToken = accessTokenCookie;
+  let currentRefreshToken = refreshTokenCookie ?? null;
+
+  if (!accessToken && !currentRefreshToken) {
     throw redirect(302, '/login');
   }
 
@@ -89,8 +92,8 @@ export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
     user = await fetchUser(fetch, accessToken);
   }
 
-  if (!user && refreshToken) {
-    const refreshed = await refreshTokens(fetch, refreshToken);
+  if (!user && currentRefreshToken) {
+    const refreshed = await refreshTokens(fetch, currentRefreshToken);
     if (refreshed?.accessToken) {
       persistTokens(refreshed);
       accessToken = refreshed.accessToken;
@@ -113,3 +116,4 @@ export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
     },
   };
 };
+

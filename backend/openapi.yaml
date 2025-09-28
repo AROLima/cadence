@@ -919,8 +919,8 @@ paths:
       tags:
         - Health
 info:
-  title: Finace API
-  description: OpenAPI documentation for the Finace backend services.
+  title: Cadence API
+  description: OpenAPI documentation for the Cadence backend services.
   version: 1.0.0
   contact: {}
 tags: []

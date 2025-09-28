@@ -24,11 +24,12 @@ function loadInitialState(): AuthState {
     if (!stored) {
       return defaultState;
     }
-    const parsed = JSON.parse(stored) as AuthState;
+    const parsed = JSON.parse(stored) as Partial<AuthState>;
     return {
+      // Only restore non-sensitive user profile info; tokens are NOT persisted
       user: parsed?.user ?? null,
-      accessToken: parsed?.accessToken ?? null,
-      refreshToken: parsed?.refreshToken ?? null,
+      accessToken: null,
+      refreshToken: null,
     };
   } catch (error) {
     console.error('[authStore] Failed to parse stored state:', error);
@@ -42,7 +43,11 @@ function createAuthStore() {
   if (browser) {
     subscribe((state) => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        // Persist only non-sensitive data (user). Do NOT store tokens.
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ user: state.user }),
+        );
       } catch (error) {
         console.error('[authStore] Failed to persist state:', error);
       }

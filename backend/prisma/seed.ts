@@ -1,4 +1,4 @@
-﻿import {
+import {
   PrismaClient,
   TaskPriority,
   TaskStatus,
@@ -15,7 +15,7 @@ async function main() {
   await prisma.financeCategory.deleteMany();
   await prisma.user.deleteMany();
 
-  const passwordHash = await bcrypt.hash('demo123', 10);
+  const passwordHash = await bcrypt.hash('demo1234', 10);
   const user = await prisma.user.create({
     data: {
       email: 'demo@orga.app',
