@@ -44,7 +44,7 @@ flowchart LR
   end
 
   SR -->|Bearer access token| API[API NestJS]
-  SR -->|/api/auth/refresh (httpOnly)| API
+  SR -->|refresh via cookie httpOnly| API
 
   API -- Prisma --> DB[(PostgreSQL)]
   API --> SWG[Swagger]
