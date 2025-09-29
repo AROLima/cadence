@@ -10,21 +10,29 @@
     tokens: { accessToken: string; refreshToken: string | null };
   };
 
-  const navigation: NavSection[] = [
-    { href: '/app/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { href: '/app/tasks', label: 'Tasks', icon: 'tasks' },
-    {
-      label: 'Finance',
-      icon: 'finance',
-      items: [
-        { href: '/app/finance/transactions', label: 'Transactions', icon: 'transactions' },
-        { href: '/app/finance/accounts', label: 'Accounts', icon: 'accounts' },
-        { href: '/app/finance/categories', label: 'Categories', icon: 'categories' },
-        { href: '/app/finance/budgets', label: 'Budgets', icon: 'budgets' },
-      ],
-    },
-    { href: '/app/settings', label: 'Settings', icon: 'settings' },
-  ];
+  let navigation: NavSection[] = [];
+  $: {
+    const isAdmin = (data.user as any)?.role === 'ADMIN';
+    const base: NavSection[] = [
+      { href: '/app/dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { href: '/app/tasks', label: 'Tasks', icon: 'tasks' },
+      {
+        label: 'Finance',
+        icon: 'finance',
+        items: [
+          { href: '/app/finance/transactions', label: 'Transactions', icon: 'transactions' },
+          { href: '/app/finance/accounts', label: 'Accounts', icon: 'accounts' },
+          { href: '/app/finance/categories', label: 'Categories', icon: 'categories' },
+          { href: '/app/finance/budgets', label: 'Budgets', icon: 'budgets' },
+        ],
+      },
+    ];
+    if (isAdmin) {
+      base.push({ href: '/app/admin', label: 'Admin', icon: 'settings' });
+    }
+    base.push({ href: '/app/settings', label: 'Settings', icon: 'settings' });
+    navigation = base;
+  }
 
   if (browser) {
     authStore.setAuth({

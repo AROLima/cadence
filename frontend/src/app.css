@@ -3,11 +3,15 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
-  @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+  @apply min-h-screen bg-slate-100 text-slate-900 antialiased;
 }
 
 .dark body {
@@ -20,4 +24,96 @@ body {
 
 .dark * {
   @apply border-slate-800;
+}
+
+/* component tokens intentionally avoided here to keep lint quiet; prefer inline utilities or set up stylelint to understand @apply */
+
+/* Remove the default Chrome/Edge yellow autofill background and match our inputs */
+/* Stronger, cross-browser autofill reset */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+input:autofill,
+textarea:autofill,
+select:autofill {
+  /* Match text to slate-100 */
+  -webkit-text-fill-color: #f1f5f9 !important;
+  color: #f1f5f9 !important;
+  caret-color: #f1f5f9 !important;
+  /* Paint over UA autofill bg with our dark field bg (slate-900/80) */
+  -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.8) inset !important;
+  box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.8) inset !important;
+  background-color: transparent !important;
+  /* Prevent yellow flash on autofill apply */
+  transition: background-color 99999s ease-out, color 99999s ease-out !important;
+}
+
+/* Firefox */
+input:-moz-autofill,
+textarea:-moz-autofill,
+select:-moz-autofill {
+  color: #f1f5f9 !important;
+  caret-color: #f1f5f9 !important;
+  box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.8) inset !important;
+  background-color: transparent !important;
+}
+
+/* Global custom checkbox */
+.cb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgb(203, 213, 225); /* slate-300 */
+  background: #ffffff;
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  appearance: none;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+.cb:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.45); /* indigo-500 ring */
+  border-color: rgb(99, 102, 241);
+}
+.cb:checked {
+  background-color: rgb(79, 70, 229); /* indigo-600 */
+  border-color: rgb(79, 70, 229);
+}
+.cb:checked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: white;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M4 8l3 3 5-6" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>') center / 12px 12px no-repeat;
+          mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M4 8l3 3 5-6" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>') center / 12px 12px no-repeat;
+}
+.cb:indeterminate {
+  background-color: rgb(99, 102, 241); /* indigo-500 */
+  border-color: rgb(99, 102, 241);
+}
+.cb:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: calc(50% - 1px);
+  height: 2px;
+  background: white;
+  border-radius: 1px;
+}
+html.dark .cb {
+  background: rgba(15, 23, 42, 0.8); /* slate-900/80 */
+  border-color: rgb(51, 65, 85); /* slate-700 */
+}
+html.dark .cb:checked,
+html.dark .cb:indeterminate {
+  background-color: rgb(99, 102, 241); /* indigo-500 */
+  border-color: rgb(99, 102, 241);
 }

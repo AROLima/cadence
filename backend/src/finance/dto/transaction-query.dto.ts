@@ -67,7 +67,9 @@ export class TransactionQueryDto {
   @IsOptional()
   @IsDateString()
   @Transform(({ value, obj }): string | undefined => {
-    const rawValue = value ?? obj?.dateFrom ?? obj?.from;
+    const o = obj as unknown as Record<string, unknown> | undefined;
+    const candidate: unknown = value ?? o?.dateFrom ?? o?.from;
+    const rawValue = typeof candidate === 'string' ? candidate : undefined;
 
     if (typeof rawValue !== 'string') {
       return undefined;
@@ -89,7 +91,9 @@ export class TransactionQueryDto {
   @IsOptional()
   @IsDateString()
   @Transform(({ value, obj }): string | undefined => {
-    const rawValue = value ?? obj?.dateTo ?? obj?.to;
+    const o = obj as unknown as Record<string, unknown> | undefined;
+    const candidate: unknown = value ?? o?.dateTo ?? o?.to;
+    const rawValue = typeof candidate === 'string' ? candidate : undefined;
 
     if (typeof rawValue !== 'string') {
       return undefined;

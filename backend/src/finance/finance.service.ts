@@ -712,7 +712,7 @@ export class FinanceService {
 
       await this.ensureAccountOwnership(userId, dto.targetAccountId);
 
-      const targetAccountId = dto.targetAccountId as number;
+      const targetAccountId = dto.targetAccountId;
       const sourceAccountId = dto.accountId;
       const groupId = randomUUID();
 

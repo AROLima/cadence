@@ -531,17 +531,17 @@
 <div class="space-y-6">
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h2 class="text-2xl font-semibold text-slate-100">Tasks</h2>
-      <p class="text-sm text-slate-400">Track work, manage subtasks, and collaborate with comments.</p>
+  <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Tasks</h2>
+  <p class="text-sm text-slate-600 dark:text-slate-400">Track work, manage subtasks, and collaborate with comments.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <label class="flex items-center gap-2 text-xs text-slate-300">
-        <input type="checkbox" bind:checked={autoSelectSubtasks} />
+  <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+    <input class="cb" type="checkbox" bind:checked={autoSelectSubtasks} />
         Auto-select subtasks
       </label>
       <button
         type="button"
-        class="flex items-center gap-2 rounded-lg border border-slate-800 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-600 hover:text-white"
+  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
         on:click={refreshTasks}
         disabled={loading}
       >
@@ -591,41 +591,41 @@
     </div>
   {/if}
 
-  <form class="space-y-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4" on:submit|preventDefault={applyFilters}>
+  <form class="space-y-4 rounded-xl border border-slate-200 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/60" on:submit|preventDefault={applyFilters}>
     <div class="grid gap-4 md:grid-cols-4">
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="task-search">Search</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="task-search">Search</label>
         <input
           id="task-search"
           name="search"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           placeholder="Search by title or description"
           bind:value={search}
         />
       </div>
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="task-due-from">Due from</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="task-due-from">Due from</label>
         <input
           id="task-due-from"
           name="dueFrom"
           type="date"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           bind:value={dueFrom}
         />
       </div>
-      <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="task-due-to">Due to</label>
+    <div class="space-y-2">
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="task-due-to">Due to</label>
         <input
           id="task-due-to"
           name="dueTo"
           type="date"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           bind:value={dueTo}
         />
       </div>
       <div class="flex items-end gap-2">
-        <label class="flex items-center gap-2 text-sm text-slate-300">
-          <input type="checkbox" bind:checked={includeSubtasks} />
+        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+          <input class="cb" type="checkbox" bind:checked={includeSubtasks} />
           Include subtasks in list
         </label>
       </div>
@@ -633,7 +633,7 @@
 
     <div class="space-y-3">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
+  <p class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Status</p>
         <div class="mt-2 flex flex-wrap gap-2">
           {#each TASK_STATUS_OPTIONS as option}
             <button
@@ -641,7 +641,7 @@
               class={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 statusFilter.includes(option)
                   ? 'bg-indigo-500 text-white'
-                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-800'
               }`}
               on:click={() => toggleStatus(option)}
             >
@@ -652,7 +652,7 @@
       </div>
 
       <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Priority</p>
+  <p class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Priority</p>
         <div class="mt-2 flex flex-wrap gap-2">
           {#each TASK_PRIORITY_OPTIONS as option}
             <button
@@ -660,7 +660,7 @@
               class={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 priorityFilter.includes(option)
                   ? 'bg-amber-500 text-slate-900'
-                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-800'
               }`}
               on:click={() => togglePriority(option)}
             >
@@ -671,10 +671,10 @@
       </div>
     </div>
 
-    <div class="flex flex-col gap-2 border-t border-slate-800 pt-3 sm:flex-row sm:justify-end">
+  <div class="flex flex-col gap-2 border-t border-slate-200 pt-3 sm:flex-row sm:justify-end dark:border-slate-800">
       <button
         type="button"
-        class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
+  class="rounded-lg border px-4 py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
         on:click={resetFilters}
       >
         Reset
@@ -688,14 +688,14 @@
     </div>
   </form>
 
-  <div class="hidden sm:block overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60">
+  <div class="hidden sm:block overflow-hidden rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-950/60">
     {#if loading}
-      <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-400">
+  <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-600 dark:text-slate-400">
         Loading tasks...
       </div>
     {:else if error}
       <div class="space-y-3 px-6 py-12 text-center">
-        <p class="text-sm text-red-300">{error}</p>
+  <p class="text-sm text-red-600 dark:text-red-300">{error}</p>
         <button
           type="button"
           class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
@@ -705,15 +705,16 @@
         </button>
       </div>
     {:else if visibleRows.length === 0}
-      <div class="px-6 py-16 text-center text-sm text-slate-400">
+  <div class="px-6 py-16 text-center text-sm text-slate-600 dark:text-slate-400">
         No tasks match your filters yet. Create one to get started.
       </div>
     {:else}
-      <table class="w-full divide-y divide-slate-800 text-sm">
-        <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
+      <table class="w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+        <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
           <tr>
             <th class="w-10 px-4 py-3 text-left">
               <input
+                class="cb"
                 type="checkbox"
                 bind:this={headerCheckboxEl}
                 checked={allVisibleSelected}
@@ -729,11 +730,12 @@
             <th class="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-900/80">
+  <tbody class="divide-y divide-slate-200 dark:divide-slate-900/80">
           {#each visibleRows as row (row.task.id)}
             <tr class={isOverdue(row.task) ? 'bg-red-500/5' : ''}>
               <td class="px-4 py-3 align-top">
                 <input
+                  class="cb"
                   type="checkbox"
                   checked={isSelected(row.task.id)}
                   on:change={() => toggleSelect(row.task.id)}
@@ -747,7 +749,7 @@
                     {#if row.task.subtasks?.length}
                       <button
                         type="button"
-                        class="rounded border border-transparent p-1 text-slate-400 transition hover:border-slate-700 hover:text-slate-200"
+                        class="rounded border border-transparent p-1 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200"
                         on:click={() => toggleTaskExpansion(row.task.id)}
                         aria-label={expandedTasks.has(row.task.id) ? 'Collapse subtasks' : 'Expand subtasks'}
                       >
@@ -764,7 +766,7 @@
                   <div class="flex-1">
                     <button
                       type="button"
-                      class="text-left text-sm font-semibold text-slate-100 hover:underline"
+                      class="text-left text-sm font-semibold text-slate-900 hover:underline dark:text-slate-100"
                       on:click={() => openEditDrawer(row.task)}
                     >
                       {row.task.title}
@@ -778,12 +780,12 @@
               <td class="px-4 py-3">
                 <span class={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
                   row.task.status === 'COMPLETED'
-                    ? 'bg-emerald-500/20 text-emerald-200'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-400/30'
                     : row.task.status === 'IN_PROGRESS'
-                      ? 'bg-indigo-500/20 text-indigo-200'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-200 dark:border-indigo-400/30'
                       : row.task.status === 'ARCHIVED'
-                        ? 'bg-slate-700 text-slate-200'
-                        : 'bg-slate-800 text-slate-200'
+                        ? 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
                 }`}>
                   {#if row.task.status === 'COMPLETED'}
                     <Check class="h-3.5 w-3.5" />
@@ -793,7 +795,7 @@
               </td>
               <td class="px-4 py-3">
                 <select
-                  class="rounded-lg border border-slate-800 bg-slate-900/80 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
+                  class="rounded-lg border px-2 py-1 text-xs border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                   on:change={(event) => handlePriorityChange(row.task, event)}
                   disabled={isActionPending(row.task.id)}
                 >
@@ -802,14 +804,14 @@
                   {/each}
                 </select>
               </td>
-              <td class={`px-4 py-3 text-sm ${isOverdue(row.task) ? 'text-red-300 font-semibold' : 'text-slate-200'}`}>
+              <td class={`px-4 py-3 text-sm ${isOverdue(row.task) ? 'text-red-600 dark:text-red-300 font-semibold' : 'text-slate-700 dark:text-slate-200'}`}>
                 {formatDueDate(row.task.dueDate)}
               </td>
               <td class="px-4 py-3">
                 {#if row.task.tags?.length}
                   <div class="flex flex-wrap gap-1 text-xs">
                     {#each row.task.tags as tag}
-                      <span class="rounded-full bg-slate-800 px-2 py-1 text-slate-300">{tag}</span>
+                      <span class="rounded-full bg-slate-200 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{tag}</span>
                     {/each}
                   </div>
                 {:else}
@@ -820,7 +822,7 @@
                 <div class="flex justify-end gap-2">
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-800 px-3 py-1 text-xs text-slate-200 transition hover:border-slate-600 hover:text-white disabled:opacity-60"
+                    class="rounded-lg border px-3 py-1 text-xs transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
                     on:click={() => toggleTaskCompleted(row.task)}
                     disabled={isActionPending(row.task.id)}
                   >
@@ -828,14 +830,14 @@
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-800 px-3 py-1 text-xs text-slate-200 transition hover:border-slate-600 hover:text-white"
+                    class="rounded-lg border px-3 py-1 text-xs transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
                     on:click={() => openSubtaskDrawer(row.task)}
                   >
                     Add subtask
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-red-500/50 px-3 py-1 text-xs text-red-200 transition hover:border-red-400 hover:text-white disabled:opacity-60"
+                    class="rounded-lg border px-3 py-1 text-xs transition border-red-300 text-red-700 hover:border-red-400 hover:text-red-900 disabled:opacity-60 dark:border-red-500/50 dark:text-red-200 dark:hover:border-red-400 dark:hover:text-white"
                     on:click={() => handleDelete(row.task)}
                     disabled={isActionPending(row.task.id)}
                   >
@@ -852,9 +854,10 @@
 
   <!-- Mobile: Card list -->
   <div class="sm:hidden">
-    <div class="mb-2 flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2">
-      <label class="flex items-center gap-2 text-xs text-slate-300">
+    <div class="mb-2 flex items-center justify-between rounded-lg border border-slate-200 bg-white/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/60">
+      <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
         <input
+          class="cb"
           type="checkbox"
           bind:this={headerCheckboxElMobile}
           checked={allVisibleSelected}
@@ -863,14 +866,14 @@
         />
         Select all
       </label>
-      <span class="text-[11px] text-slate-400">{visibleRows.length} visible</span>
+  <span class="text-[11px] text-slate-600 dark:text-slate-400">{visibleRows.length} visible</span>
     </div>
 
     {#if loading}
-      <div class="flex items-center justify-center px-4 py-10 text-sm text-slate-400">Loading tasks...</div>
+  <div class="flex items-center justify-center px-4 py-10 text-sm text-slate-600 dark:text-slate-400">Loading tasks...</div>
     {:else if error}
       <div class="space-y-3 px-4 py-8 text-center">
-        <p class="text-sm text-red-300">{error}</p>
+        <p class="text-sm text-red-600 dark:text-red-300">{error}</p>
         <button
           type="button"
           class="w-full rounded-lg bg-indigo-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
@@ -880,24 +883,27 @@
         </button>
       </div>
     {:else if visibleRows.length === 0}
-      <div class="px-4 py-10 text-center text-sm text-slate-400">No tasks match your filters yet. Create one to get started.</div>
+  <div class="px-4 py-10 text-center text-sm text-slate-600 dark:text-slate-400">No tasks match your filters yet. Create one to get started.</div>
     {:else}
       <ul class="space-y-3">
         {#each visibleRows as row (row.task.id)}
-          <li class={`rounded-xl border border-slate-800 ${isOverdue(row.task) ? 'bg-red-500/5' : 'bg-slate-950/60'} p-3`} style={`margin-left: ${row.depth * 8}px`}>
+          <li class={`rounded-xl border ${isOverdue(row.task) ? 'bg-red-50 dark:bg-red-500/5' : 'bg-white/70 dark:bg-slate-950/60'} border-slate-200 dark:border-slate-800 p-3`} style={`margin-left: ${row.depth * 8}px`}>
             <div class="flex items-start gap-3">
               <input
+                class="cb"
                 type="checkbox"
                 checked={isSelected(row.task.id)}
                 on:change={() => toggleSelect(row.task.id)}
                 disabled={isActionPending(row.task.id) || bulkPending}
                 aria-label={`Select ${row.task.title}`}
               />
+
+<!-- checkbox styles are now global in app.css (.cb) -->
               <div class="min-w-0 flex-1">
                 <div class="flex items-start justify-between gap-2">
                   <button
                     type="button"
-                    class="max-w-[75%] truncate text-left text-[15px] font-semibold text-slate-100 hover:underline"
+                    class="max-w-[75%] truncate text-left text-[15px] font-semibold text-slate-900 hover:underline dark:text-slate-100"
                     on:click={() => openEditDrawer(row.task)}
                     title={row.task.title}
                   >
@@ -906,7 +912,7 @@
                   {#if row.task.subtasks?.length}
                     <button
                       type="button"
-                      class="rounded border border-transparent p-1 text-slate-400 transition hover:border-slate-700 hover:text-slate-200"
+                      class="rounded border border-transparent p-1 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200"
                       on:click={() => toggleTaskExpansion(row.task.id)}
                       aria-label={expandedTasks.has(row.task.id) ? 'Collapse subtasks' : 'Expand subtasks'}
                     >
@@ -919,28 +925,28 @@
                   {/if}
                 </div>
                 {#if row.task.description}
-                  <p class="mt-1 line-clamp-2 text-[12px] text-slate-500">{row.task.description}</p>
+                  <p class="mt-1 line-clamp-2 text-[12px] text-slate-600 dark:text-slate-500">{row.task.description}</p>
                 {/if}
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span class={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
                     row.task.status === 'COMPLETED'
-                      ? 'bg-emerald-500/20 text-emerald-200'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-400/30'
                       : row.task.status === 'IN_PROGRESS'
-                        ? 'bg-indigo-500/20 text-indigo-200'
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-200 dark:border-indigo-400/30'
                         : row.task.status === 'ARCHIVED'
-                          ? 'bg-slate-700 text-slate-200'
-                          : 'bg-slate-800 text-slate-200'
+                          ? 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
                   }`}>
                     {formatStatus(row.task.status)}
                   </span>
                   <span class="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">{formatPriority(row.task.priority)}</span>
-                  <span class={`ml-auto ${isOverdue(row.task) ? 'text-red-300 font-semibold' : 'text-slate-300'}`}>{formatDueDate(row.task.dueDate)}</span>
+                  <span class={`ml-auto ${isOverdue(row.task) ? 'text-red-600 dark:text-red-300 font-semibold' : 'text-slate-700 dark:text-slate-300'}`}>{formatDueDate(row.task.dueDate)}</span>
                 </div>
                 <div class="mt-2">
                   {#if row.task.tags?.length}
                     <div class="flex flex-wrap gap-1 text-[11px]">
                       {#each row.task.tags as tag}
-                        <span class="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">{tag}</span>
+                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{tag}</span>
                       {/each}
                     </div>
                   {:else}
@@ -950,7 +956,7 @@
                 <div class="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-800 px-2.5 py-1 text-[11px] text-slate-200 transition hover:border-slate-600 hover:text-white disabled:opacity-60"
+                    class="rounded-lg border px-2.5 py-1 text-[11px] transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
                     on:click={() => toggleTaskCompleted(row.task)}
                     disabled={isActionPending(row.task.id)}
                   >
@@ -958,14 +964,14 @@
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-800 px-2.5 py-1 text-[11px] text-slate-200 transition hover:border-slate-600 hover:text-white"
+                    class="rounded-lg border px-2.5 py-1 text-[11px] transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
                     on:click={() => openSubtaskDrawer(row.task)}
                   >
                     Add subtask
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-red-500/50 px-2.5 py-1 text-[11px] text-red-200 transition hover:border-red-400 hover:text-white disabled:opacity-60"
+                    class="rounded-lg border px-2.5 py-1 text-[11px] transition border-red-300 text-red-700 hover:border-red-400 hover:text-red-900 disabled:opacity-60 dark:border-red-500/50 dark:text-red-200 dark:hover:border-red-400 dark:hover:text-white"
                     on:click={() => handleDelete(row.task)}
                     disabled={isActionPending(row.task.id)}
                   >

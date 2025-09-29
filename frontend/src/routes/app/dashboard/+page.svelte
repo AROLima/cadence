@@ -15,6 +15,8 @@
     AccountBalanceSummary,
   } from '$lib/types/reports';
   import type { FinanceCategoryNode, FinanceAccount } from '$lib/types/finance';
+  import { getMySettings } from '$lib/api/me';
+  import { getCurrencyOptions } from '$lib/utils/currency';
 
   let loading = true;
   let error: string | null = null;
@@ -30,13 +32,16 @@
   let currentMonthExpenses = 0;
   let totalBalance = 0;
 
-  const locale = browser ? navigator.language : 'en-US';
-  const currencyFormatter = new Intl.NumberFormat(locale, {
+  let locale = browser ? navigator.language : 'en-US';
+  let currency = 'USD';
+  const currencyOptions = getCurrencyOptions();
+  let currencyName = 'USD';
+  let currencyFormatter = new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 2,
   });
-  const numberFormatter = new Intl.NumberFormat(locale);
+  let numberFormatter = new Intl.NumberFormat(locale);
 
   let Chart: typeof import('chart.js/auto').default | null = null;
   let monthlyChart: import('chart.js/auto').Chart | null = null;
@@ -46,6 +51,27 @@
   let monthlyCanvas: HTMLCanvasElement | undefined;
   let categoryCanvas: HTMLCanvasElement | undefined;
   let burndownCanvas: HTMLCanvasElement | undefined;
+
+  // Simple theme detection for chart palettes
+  const isDark = () => (browser ? document.documentElement.classList.contains('dark') : true);
+  const chartPalette = () => {
+    if (isDark()) {
+      return {
+        text: '#cbd5e1', // slate-300
+        muted: '#94a3b8', // slate-400
+        grid: 'rgba(148, 163, 184, 0.08)',
+        border: 'rgba(148, 163, 184, 0.2)',
+        legend: '#cbd5e1',
+      } as const;
+    }
+    return {
+      text: '#0f172a', // slate-900
+      muted: '#475569', // slate-600
+      grid: 'rgba(148, 163, 184, 0.15)',
+      border: 'rgba(148, 163, 184, 0.35)',
+      legend: '#334155', // slate-700
+    } as const;
+  };
 
   // Filters
   const nowRef = new Date();
@@ -80,6 +106,16 @@
   onMount(async () => {
     const now = new Date();
     try {
+      // Load user settings for locale/currency first
+      try {
+        const my = await getMySettings();
+        if (my?.locale) locale = my.locale;
+        if (my?.currency) currency = my.currency;
+        const opt = currencyOptions.find((c) => c.code === currency);
+        currencyName = opt ? `${opt.code} – ${opt.symbol} ${opt.name}` : currency;
+        currencyFormatter = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 });
+        numberFormatter = new Intl.NumberFormat(locale);
+      } catch {}
       const module = await import('chart.js/auto');
       Chart = module.default;
       // Preload categories and accounts for filters (non-blocking)
@@ -452,7 +488,7 @@
           legend: {
             display: true,
             position: 'bottom',
-            labels: { color: '#cbd5f5', usePointStyle: true, boxWidth: 8, boxHeight: 8 },
+            labels: { color: chartPalette().legend, usePointStyle: true, boxWidth: 8, boxHeight: 8 },
           },
           tooltip: {
             mode: 'index',
@@ -468,17 +504,17 @@
         },
         scales: {
           x: {
-            ticks: { color: '#94a3b8', maxRotation: 0 },
-            grid: { color: 'rgba(148, 163, 184, 0.08)' },
-            border: { color: 'rgba(148, 163, 184, 0.2)' },
+            ticks: { color: chartPalette().muted, maxRotation: 0 },
+            grid: { color: chartPalette().grid },
+            border: { color: chartPalette().border },
           },
           y: {
             ticks: {
-              color: '#94a3b8',
+              color: chartPalette().muted,
               callback: (value) => currencyFormatter.format(Number(value)),
             },
-            grid: { color: 'rgba(148, 163, 184, 0.08)' },
-            border: { color: 'rgba(148, 163, 184, 0.2)' },
+            grid: { color: chartPalette().grid },
+            border: { color: chartPalette().border },
           },
         },
         elements: { point: { hitRadius: 6 } },
@@ -517,7 +553,7 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#cbd5f5', usePointStyle: true, boxWidth: 10, boxHeight: 10 } },
+          legend: { position: 'bottom', labels: { color: chartPalette().legend, usePointStyle: true, boxWidth: 10, boxHeight: 10 } },
           tooltip: {
             callbacks: {
               label: (ctx) => {
@@ -578,7 +614,7 @@
         interaction: { mode: 'index', intersect: false },
         animation: { duration: 500, easing: 'easeOutQuart' },
         plugins: {
-          legend: { display: true, position: 'bottom', labels: { color: '#cbd5f5', usePointStyle: true, boxWidth: 8, boxHeight: 8 } },
+          legend: { display: true, position: 'bottom', labels: { color: chartPalette().legend, usePointStyle: true, boxWidth: 8, boxHeight: 8 } },
           tooltip: {
             callbacks: {
               label: (ctx) => `${ctx.dataset?.label ?? ''}: ${numberFormatter.format(Number(ctx.parsed?.y ?? 0))}`,
@@ -587,17 +623,17 @@
         },
         scales: {
           x: {
-            ticks: { color: '#94a3b8', maxRotation: 0 },
-            grid: { color: 'rgba(148, 163, 184, 0.08)' },
-            border: { color: 'rgba(148, 163, 184, 0.2)' },
+            ticks: { color: chartPalette().muted, maxRotation: 0 },
+            grid: { color: chartPalette().grid },
+            border: { color: chartPalette().border },
           },
           y: {
             ticks: {
-              color: '#94a3b8',
+              color: chartPalette().muted,
               callback: (value) => numberFormatter.format(Number(value)),
             },
-            grid: { color: 'rgba(148, 163, 184, 0.08)' },
-            border: { color: 'rgba(148, 163, 184, 0.2)' },
+            grid: { color: chartPalette().grid },
+            border: { color: chartPalette().border },
           },
         },
       },
@@ -659,27 +695,27 @@
 
 <div class="space-y-8">
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-    <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Tasks completed (last {filterTasksWindowDays} days)</p>
-      <p class="mt-2 text-2xl font-semibold text-slate-100">{numberFormatter.format(tasksCompletedWindow)}</p>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+      <p class="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Tasks completed (last {filterTasksWindowDays} days)</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{numberFormatter.format(tasksCompletedWindow)}</p>
     </div>
-    <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Avg completion time</p>
-      <p class="mt-2 text-2xl font-semibold text-slate-100">{averageLeadTimeLabel}</p>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+      <p class="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Avg completion time</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{averageLeadTimeLabel}</p>
     </div>
-    <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Expenses — {selectedMonthLabel}</p>
-      <p class="mt-2 text-2xl font-semibold text-red-300">{asCurrency(currentMonthExpenses)}</p>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+      <p class="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Expenses — {selectedMonthLabel} <span title={currencyName} class="text-[10px] text-slate-500 align-middle">({currency})</span></p>
+      <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-red-300">{asCurrency(currentMonthExpenses)}</p>
     </div>
-    <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
       <div class="flex items-start justify-between">
         <div>
-          <p class="text-xs uppercase tracking-wide text-slate-400">Total balance</p>
-          <p class="mt-2 text-2xl font-semibold text-emerald-300">{asCurrency(totalBalance)}</p>
+          <p class="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Total balance <span title={currencyName} class="text-[10px] text-slate-500 align-middle">({currency})</span></p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-300">{asCurrency(totalBalance)}</p>
         </div>
         <button
           type="button"
-          class="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-200 transition hover:border-slate-500 hover:text-white"
+          class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
           on:click={refreshDashboard}
           aria-label="Refresh dashboard"
         >
@@ -690,42 +726,42 @@
   </div>
 
   <!-- Filters -->
-  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+  <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
     <div class="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
       <div class="flex items-center gap-2">
-        <label for="filter-month" class="w-20 text-xs text-slate-400">Month</label>
-        <select id="filter-month" bind:value={filterEndMonth} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+        <label for="filter-month" class="w-20 text-xs text-slate-600 dark:text-slate-400">Month</label>
+        <select id="filter-month" bind:value={filterEndMonth} class="w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
           {#each monthNames as label, i}
             <option value={i + 1}>{label}</option>
           {/each}
         </select>
       </div>
       <div class="flex items-center gap-2">
-        <label for="filter-year" class="w-20 text-xs text-slate-400">Year</label>
-        <select id="filter-year" bind:value={filterEndYear} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+        <label for="filter-year" class="w-20 text-xs text-slate-600 dark:text-slate-400">Year</label>
+        <select id="filter-year" bind:value={filterEndYear} class="w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
           {#each yearsOptions as y}
             <option value={y}>{y}</option>
           {/each}
         </select>
       </div>
       <div class="flex items-center gap-2">
-        <label for="filter-monthsback" class="w-24 text-xs text-slate-400">Months back</label>
-        <select id="filter-monthsback" bind:value={filterMonthsBack} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+        <label for="filter-monthsback" class="w-24 text-xs text-slate-600 dark:text-slate-400">Months back</label>
+        <select id="filter-monthsback" bind:value={filterMonthsBack} class="w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
           {#each monthsBackOptions as opt}
             <option value={opt}>{opt}</option>
           {/each}
         </select>
       </div>
       <div class="flex items-center gap-2 md:col-span-2 lg:col-span-1">
-        <label for="filter-taskwindow" class="w-28 text-xs text-slate-400">Tasks window</label>
-        <select id="filter-taskwindow" bind:value={filterTasksWindowDays} class="w-full rounded-md border border-slate-800 bg-slate-900/70 p-2 text-sm text-slate-200">
+        <label for="filter-taskwindow" class="w-28 text-xs text-slate-600 dark:text-slate-400">Tasks window</label>
+        <select id="filter-taskwindow" bind:value={filterTasksWindowDays} class="w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
           {#each tasksWindowOptions as opt}
             <option value={opt}>{opt} days</option>
           {/each}
         </select>
       </div>
       <div class="flex items-center justify-end">
-        <button type="button" class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white" on:click={refreshDashboard}>Apply</button>
+        <button type="button" class="rounded-md border border-indigo-600 bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-700 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" on:click={refreshDashboard}>Apply</button>
       </div>
     </div>
   </div>
@@ -734,31 +770,31 @@
     <!-- Skeletons -->
     <div class="grid gap-4 md:grid-cols-4">
       {#each Array(4) as _}
-        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-          <div class="h-3 w-32 animate-pulse rounded bg-slate-800"></div>
-          <div class="mt-4 h-7 w-24 animate-pulse rounded bg-slate-800"></div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+          <div class="h-3 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-800"></div>
+          <div class="mt-4 h-7 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-800"></div>
         </div>
       {/each}
     </div>
   <div class="mt-6 grid gap-6 md:grid-cols-2">
       {#each Array(3) as _, i}
-  <div class={`rounded-xl border border-slate-800 bg-slate-950/60 p-4 ${i === 2 ? 'md:col-span-2' : ''}`}>
-          <div class="mb-4 h-4 w-48 animate-pulse rounded bg-slate-800"></div>
-          <div class="h-72 animate-pulse rounded bg-slate-900"></div>
+  <div class={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 ${i === 2 ? 'md:col-span-2' : ''}`}>
+          <div class="mb-4 h-4 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-800"></div>
+          <div class="h-72 animate-pulse rounded bg-slate-100 dark:bg-slate-900"></div>
         </div>
       {/each}
-  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 md:col-span-2">
-        <div class="mb-3 h-4 w-40 animate-pulse rounded bg-slate-800"></div>
-        <div class="h-40 animate-pulse rounded bg-slate-900"></div>
+  <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
+        <div class="mb-3 h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-800"></div>
+        <div class="h-40 animate-pulse rounded bg-slate-100 dark:bg-slate-900"></div>
       </div>
     </div>
   {:else if error}
-    <div class="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-sm text-red-200">{error}</div>
+    <div class="rounded-xl border border-red-300 bg-red-50 p-6 text-sm text-rose-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">{error}</div>
   {:else}
   <div class="grid gap-6 md:grid-cols-2">
-      <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-slate-200">Monthly income vs expense</h3>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Monthly income vs expense</h3>
         </div>
         <div class="h-72">
           {#if hasMonthlyData}
@@ -771,19 +807,19 @@
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
         <div class="mb-4 flex items-center justify-between gap-3">
-          <h3 class="text-sm font-semibold text-slate-200">Expenses by category ({selectedMonthLabel})</h3>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Expenses by category ({selectedMonthLabel})</h3>
           <div class="flex items-center gap-2 text-xs">
-            <label for="filter-category" class="text-slate-400">Category</label>
-            <select id="filter-category" bind:value={categoryFilterId} class="rounded-md border border-slate-800 bg-slate-900/70 p-1.5 text-xs text-slate-200" on:change={handleCategoryFilterChange}>
+            <label for="filter-category" class="text-slate-600 dark:text-slate-400">Category</label>
+            <select id="filter-category" bind:value={categoryFilterId} class="rounded-md border border-slate-300 bg-white p-1.5 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200" on:change={handleCategoryFilterChange}>
               <option value="">All</option>
               {#each flattenCategories(categoriesTree) as c}
                 <option value={c.id}>{c.name}</option>
               {/each}
             </select>
-            <label class="ml-2 inline-flex items-center gap-1 text-slate-400">
-              <input type="checkbox" bind:checked={includeSubcategories} on:change={handleCategoryFilterChange} class="h-3 w-3 rounded border-slate-700 bg-slate-900" />
+            <label class="ml-2 inline-flex items-center gap-1 text-slate-600 dark:text-slate-400">
+              <input type="checkbox" bind:checked={includeSubcategories} on:change={handleCategoryFilterChange} class="cb" />
               <span>Include sub</span>
             </label>
           </div>
@@ -799,11 +835,11 @@
         </div>
       </div>
 
-  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 md:col-span-2">
+  <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-slate-200">Tasks burndown (last {filterTasksWindowDays} days)</h3>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Tasks burndown (last {filterTasksWindowDays} days)</h3>
           {#if burndownFallbackNote}
-            <p class="text-xs text-slate-400">{burndownFallbackNote}</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400">{burndownFallbackNote}</p>
           {/if}
         </div>
         <div class="h-60">
@@ -817,12 +853,12 @@
         </div>
       </div>
 
-  <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 md:col-span-2">
+  <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-slate-200">Account balances</h3>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Account balances</h3>
           <div class="flex items-center gap-2 text-xs">
-            <label for="filter-account" class="text-slate-400">Account</label>
-            <select id="filter-account" bind:value={accountFilterId} class="rounded-md border border-slate-800 bg-slate-900/70 p-1.5 text-xs text-slate-200">
+            <label for="filter-account" class="text-slate-600 dark:text-slate-400">Account</label>
+            <select id="filter-account" bind:value={accountFilterId} class="rounded-md border border-slate-300 bg-white p-1.5 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200">
               <option value="">All</option>
               {#each accountsList as acc}
                 <option value={acc.id}>{acc.name}</option>
@@ -832,8 +868,8 @@
         </div>
         <!-- Desktop/Table -->
         <div class="hidden overflow-x-auto sm:block">
-          <table class="min-w-full divide-y divide-slate-800 text-sm">
-            <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
+          <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
               <tr>
                 <th class="px-3 py-2 text-left">Account</th>
                 <th class="px-3 py-2 text-left">Type</th>
@@ -843,15 +879,15 @@
                 <th class="px-3 py-2 text-left">Transfers</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-900/70">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-900/70">
               {#each (accountFilterId ? accountBalances.filter(a => a.accountId === Number(accountFilterId)) : accountBalances) as account (account.accountId)}
                 <tr>
-                  <td class="px-3 py-2 text-slate-100">{account.name}</td>
-                  <td class="px-3 py-2 text-slate-300">{account.type}</td>
-                  <td class="px-3 py-2 text-emerald-300">{asCurrency(account.balance)}</td>
-                  <td class="px-3 py-2 text-emerald-300">{asCurrency(account.totals.income)}</td>
-                  <td class="px-3 py-2 text-red-300">{asCurrency(account.totals.expense)}</td>
-                  <td class="px-3 py-2 text-slate-200">{asCurrency(account.totals.transferNet)}</td>
+                  <td class="px-3 py-2 text-slate-900 dark:text-slate-100">{account.name}</td>
+                  <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{account.type}</td>
+                  <td class="px-3 py-2 text-emerald-600 dark:text-emerald-300">{asCurrency(account.balance)}</td>
+                  <td class="px-3 py-2 text-emerald-600 dark:text-emerald-300">{asCurrency(account.totals.income)}</td>
+                  <td class="px-3 py-2 text-rose-600 dark:text-red-300">{asCurrency(account.totals.expense)}</td>
+                  <td class="px-3 py-2 text-slate-800 dark:text-slate-200">{asCurrency(account.totals.transferNet)}</td>
                 </tr>
               {/each}
             </tbody>
@@ -865,26 +901,26 @@
           {#if (accountFilterId ? accountBalances.some(a => a.accountId === Number(accountFilterId)) : accountBalances.length)}
             <ul class="space-y-3">
               {#each (accountFilterId ? accountBalances.filter(a => a.accountId === Number(accountFilterId)) : accountBalances) as account (account.accountId)}
-                <li class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <li class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm font-semibold text-slate-100">{account.name}</p>
-                      <p class="text-xs text-slate-400">{account.type}</p>
+                      <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{account.name}</p>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">{account.type}</p>
                     </div>
-                    <p class="text-sm font-semibold text-emerald-300">{asCurrency(account.balance)}</p>
+                    <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-300">{asCurrency(account.balance)}</p>
                   </div>
                   <div class="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-                    <div class="rounded-lg bg-slate-900/60 p-2">
-                      <p class="text-slate-400">Income</p>
-                      <p class="text-emerald-300">{asCurrency(account.totals.income)}</p>
+                    <div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-900/60">
+                      <p class="text-slate-600 dark:text-slate-400">Income</p>
+                      <p class="text-emerald-600 dark:text-emerald-300">{asCurrency(account.totals.income)}</p>
                     </div>
-                    <div class="rounded-lg bg-slate-900/60 p-2">
-                      <p class="text-slate-400">Expense</p>
-                      <p class="text-red-300">{asCurrency(account.totals.expense)}</p>
+                    <div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-900/60">
+                      <p class="text-slate-600 dark:text-slate-400">Expense</p>
+                      <p class="text-rose-600 dark:text-red-300">{asCurrency(account.totals.expense)}</p>
                     </div>
-                    <div class="rounded-lg bg-slate-900/60 p-2">
-                      <p class="text-slate-400">Transfers</p>
-                      <p class="text-slate-200">{asCurrency(account.totals.transferNet)}</p>
+                    <div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-900/60">
+                      <p class="text-slate-600 dark:text-slate-400">Transfers</p>
+                      <p class="text-slate-800 dark:text-slate-200">{asCurrency(account.totals.transferNet)}</p>
                     </div>
                   </div>
                 </li>
@@ -897,12 +933,12 @@
       </div>
 
       <!-- Quick actions -->
-      <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
-        <h3 class="mb-3 text-sm font-semibold text-slate-200">Quick actions</h3>
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
+        <h3 class="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-200">Quick actions</h3>
         <div class="grid gap-3 sm:grid-cols-3">
-          <a href="/app/finance/transactions" class="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-200 transition hover:border-slate-600 hover:text-white">New transaction</a>
-          <a href="/app/finance/accounts" class="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-200 transition hover:border-slate-600 hover:text-white">New account</a>
-          <a href="/app/tasks" class="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-200 transition hover:border-slate-600 hover:text-white">New task</a>
+          <a href="/app/finance/transactions" class="rounded-md border border-slate-300 bg-white px-4 py-3 text-center text-sm text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white">New transaction</a>
+          <a href="/app/finance/accounts" class="rounded-md border border-slate-300 bg-white px-4 py-3 text-center text-sm text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white">New account</a>
+          <a href="/app/tasks" class="rounded-md border border-slate-300 bg-white px-4 py-3 text-center text-sm text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white">New task</a>
         </div>
       </div>
     </div>

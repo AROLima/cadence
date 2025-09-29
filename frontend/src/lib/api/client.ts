@@ -4,7 +4,7 @@ import { get } from 'svelte/store';
 import { API_BASE_URL } from '$lib/config';
 import { authStore, type AuthState } from '$lib/stores/auth';
 
-export interface ApiRequestOptions extends RequestInit {
+export interface ApiRequestOptions extends globalThis.RequestInit {
   baseUrl?: string;
   skipAuth?: boolean;
   retry?: boolean;
@@ -53,7 +53,7 @@ async function performFetch(
   input: string,
   options: ApiRequestOptions,
 ): Promise<Response> {
-  const { baseUrl = API_BASE_URL, skipAuth = false, retry = false, ...init } = options;
+  const { baseUrl = API_BASE_URL, skipAuth = false, ...init } = options;
   const target = resolveUrl(input, baseUrl);
   const headers = new Headers(init.headers ?? {});
 
@@ -64,7 +64,14 @@ async function performFetch(
     }
   }
 
-  return fetch(target, { ...init, headers, credentials: options.credentials ?? (target.startsWith(API_BASE_URL) ? "include" : init.credentials ?? "same-origin") });
+  // Do not include credentials (cookies) by default for cross-origin API calls.
+  // We authenticate via Authorization header; cookies are only used on server-bound
+  // routes like /api/auth/refresh (same-origin), which already include cookies by default.
+  return fetch(target, {
+    ...init,
+    headers,
+    credentials: options.credentials ?? init.credentials ?? 'same-origin',
+  });
 }
 
 async function requestWithRetry(

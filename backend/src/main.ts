@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { buildSwaggerConfig } from './common/swagger/swagger.config';
 import { AppModule } from './app.module';
+import { AdminMountService } from './admin/admin.mount.service';
 import { PrismaService } from './prisma/prisma.service';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
@@ -135,6 +136,16 @@ async function bootstrap() {
   const HOST = process.env.HOST || '0.0.0.0';
   await app.listen(PORT, HOST);
   console.log(`\nAPI listening on http://${HOST}:${PORT}`);
+
+  // Try to mount AdminJS at /admin if dependencies are installed
+  try {
+    const service = app.get(AdminMountService, { strict: false });
+    if (service?.mount) {
+      await service.mount(app);
+    }
+  } catch {
+    // Admin service not available; ignore
+  }
 }
 
 void bootstrap();

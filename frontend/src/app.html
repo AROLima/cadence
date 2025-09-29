@@ -8,6 +8,28 @@
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#8b5cf6" />
   <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    html.dark {
+      color-scheme: dark;
+    }
+  </style>
+  <script>
+    (function initTheme() {
+      try {
+        var stored = localStorage.getItem('theme');
+        var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var useDark = theme === 'dark' || (theme === 'system' && prefersDark);
+        var root = document.documentElement;
+        if (useDark) root.classList.add('dark');
+        else root.classList.remove('dark');
+      } catch (_) { /* noop */ }
+    })();
+  </script>
   %sveltekit.head%
 </head>
 

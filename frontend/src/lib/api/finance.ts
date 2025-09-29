@@ -6,7 +6,6 @@ import type {
   Transaction,
   TransactionFilters,
   TransactionPayload,
-  TransactionType,
   AccountPayload,
   CategoryPayload,
 } from '$lib/types/finance';
@@ -220,7 +219,6 @@ export async function exportTransactionsCsv(
 export function buildTransferPayload(
   base: TransactionPayload,
   targetAccountId: number,
-  direction: 'OUT' | 'IN',
 ): TransactionPayload {
   if (base.type !== 'TRANSFER') {
     return base;

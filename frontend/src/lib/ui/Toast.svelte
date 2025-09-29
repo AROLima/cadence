@@ -18,17 +18,17 @@
     <div
       class={`pointer-events-auto w-full max-w-sm rounded-xl border px-4 py-3 shadow-toast backdrop-blur ${
         toast.variant === 'success'
-          ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-100'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100'
           : toast.variant === 'error'
-            ? 'border-red-500/40 bg-red-500/15 text-red-100'
+            ? 'border-red-200 bg-red-50 text-rose-800 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-100'
             : toast.variant === 'warning'
-              ? 'border-amber-500/40 bg-amber-500/20 text-amber-100'
-              : 'border-slate-800 bg-slate-900/80 text-slate-100'
+              ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-100'
+              : 'border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100'
       } animate-toast-in`}
     >
       <p class="text-sm font-semibold">{toast.title}</p>
       {#if toast.description}
-        <p class="mt-1 text-xs text-slate-200/80">{toast.description}</p>
+        <p class="mt-1 text-xs text-slate-600 dark:text-slate-200/80">{toast.description}</p>
       {/if}
     </div>
   {/each}

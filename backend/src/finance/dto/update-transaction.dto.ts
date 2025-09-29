@@ -15,7 +15,10 @@ export class UpdateTransactionDto extends PartialType(CreateTransactionDto) {
   @IsNumber()
   amount?: number;
 
-  @ApiPropertyOptional({ example: 2, description: 'Target account for transfers' })
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Target account for transfers',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

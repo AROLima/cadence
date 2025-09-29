@@ -11,6 +11,22 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  // Narrowly typed accessor for AppSetting delegate to keep eslint type rules happy
+  getAppSettingDelegate() {
+    const delegate = (this as unknown as Record<string, unknown>)[
+      'appSetting'
+    ] as {
+      findUnique: (args: {
+        where: { key: string };
+      }) => Promise<{ value: unknown } | null>;
+      upsert: (args: {
+        where: { key: string };
+        update: { value: object };
+        create: { key: string; value: object };
+      }) => Promise<unknown>;
+    };
+    return delegate;
+  }
   async onModuleInit() {
     await this.$connect();
   }

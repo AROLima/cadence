@@ -10,6 +10,7 @@
     createTransaction,
     exportTransactionsCsv,
   } from '$lib/api/finance';
+  import { getMySettings } from '$lib/api/me';
   import type {
     FinanceAccount,
     FinanceCategoryNode,
@@ -18,6 +19,7 @@
     TransactionPayload,
     TransactionType,
   } from '$lib/types/finance';
+  import { getCurrencyOptions } from '$lib/utils/currency';
 
   const TRANSACTION_TYPES: TransactionType[] = ['EXPENSE', 'INCOME', 'TRANSFER'];
 
@@ -44,10 +46,13 @@
   let modalSaving = false;
   let showFilters = false;
 
-  const locale = browser ? navigator.language : 'en-US';
-  const currencyFormatter = new Intl.NumberFormat(locale, {
+  let locale = browser ? navigator.language : 'en-US';
+  let currency = 'USD';
+  const currencyOptions = getCurrencyOptions();
+  let currencyName = 'USD';
+  let currencyFormatter = new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 2,
   });
 
@@ -63,6 +68,21 @@
   $: categoryOptions = flattenCategories(categories ?? []);
 
   onMount(async () => {
+    // Load user settings to honor locale and currency
+    try {
+      const my = await getMySettings();
+      if (my?.locale) locale = my.locale;
+  if (my?.currency) currency = my.currency;
+  const opt = currencyOptions.find((c) => c.code === currency);
+  currencyName = opt ? `${opt.code} – ${opt.symbol} ${opt.name}` : currency;
+      currencyFormatter = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+      });
+    } catch (e) {
+      // ignore, use defaults
+    }
     await Promise.all([loadAccounts(), loadCategories()]);
     void loadTransactions(true);
   });
@@ -172,12 +192,12 @@
 
   const amountClass = (transaction: Transaction) => {
     if (transaction.type === 'EXPENSE' || (transaction.type === 'TRANSFER' && transaction.transferDirection === 'OUT')) {
-      return 'text-red-300';
+      return 'text-red-600 dark:text-red-300';
     }
     if (transaction.type === 'INCOME' || (transaction.type === 'TRANSFER' && transaction.transferDirection === 'IN')) {
-      return 'text-emerald-300';
+      return 'text-emerald-600 dark:text-emerald-300';
     }
-    return 'text-slate-200';
+    return 'text-slate-700 dark:text-slate-200';
   };
 
   const openModal = () => {
@@ -247,13 +267,13 @@
 <div class="space-y-6">
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h2 class="text-2xl font-semibold text-slate-100">Transactions</h2>
-      <p class="text-sm text-slate-400">Filter by account, category, type, and export finance data.</p>
+  <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Transactions</h2>
+  <p class="text-sm text-slate-600 dark:text-slate-400">Filter by account, category, type, and export finance data.</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <button
         type="button"
-        class="flex items-center gap-2 rounded-lg border border-slate-800 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-600 hover:text-white disabled:opacity-60"
+  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition disabled:opacity-60 border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
         on:click={handleExportCsv}
         disabled={exporting || loading}
       >
@@ -269,12 +289,12 @@
     </div>
   </div>
 
-  <form class="space-y-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4" on:submit|preventDefault={applyFilters}>
+  <form class="space-y-4 rounded-xl border border-slate-200 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/60" on:submit|preventDefault={applyFilters}>
     <div class="flex items-center justify-between sm:hidden">
-      <p class="text-sm text-slate-300">Filters</p>
+  <p class="text-sm text-slate-600 dark:text-slate-300">Filters</p>
       <button
         type="button"
-        class={`rounded-lg border px-3 py-1.5 text-xs transition ${showFilters ? 'border-indigo-500 text-indigo-200' : 'border-slate-700 text-slate-300'}`}
+  class={`rounded-lg border px-3 py-1.5 text-xs transition ${showFilters ? 'border-indigo-500 text-indigo-700 dark:text-indigo-200' : 'border-slate-300 text-slate-700 dark:border-slate-700 dark:text-slate-300'}`}
         on:click={() => (showFilters = !showFilters)}
       >
         {showFilters ? 'Hide' : 'Show'}
@@ -283,10 +303,10 @@
     <div class={`space-y-4 ${showFilters ? '' : 'sm:space-y-0 sm:block hidden'}`}>
     <div class="grid gap-4 md:grid-cols-5">
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="filter-account">Account</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="filter-account">Account</label>
         <select
           id="filter-account"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           bind:value={selectedAccountId}
         >
           <option value="">All accounts</option>
@@ -296,10 +316,10 @@
         </select>
       </div>
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="filter-category">Category</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="filter-category">Category</label>
         <select
           id="filter-category"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           bind:value={selectedCategoryId}
         >
           <option value="">All categories</option>
@@ -309,28 +329,28 @@
         </select>
       </div>
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="filter-from">From</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="filter-from">From</label>
         <input
           id="filter-from"
           type="date"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           bind:value={fromDate}
         />
       </div>
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="filter-to">To</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="filter-to">To</label>
         <input
           id="filter-to"
           type="date"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           bind:value={toDate}
         />
       </div>
       <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400" for="filter-search">Search</label>
+  <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400" for="filter-search">Search</label>
         <input
           id="filter-search"
-          class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+          class="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
           placeholder="Notes, account, tags"
           bind:value={search}
         />
@@ -338,7 +358,7 @@
     </div>
 
     <div class="space-y-3">
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Type</p>
+  <p class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Type</p>
       <div class="flex flex-wrap gap-2">
         {#each TRANSACTION_TYPES as typeOption}
           <button
@@ -346,7 +366,7 @@
             class={`rounded-full px-3 py-1 text-xs font-medium transition ${
               typeFilter.includes(typeOption)
                 ? 'bg-indigo-500 text-white'
-                : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
             on:click={() => toggleTypeFilter(typeOption)}
           >
@@ -356,10 +376,10 @@
       </div>
     </div>
 
-    <div class="flex flex-col gap-2 border-t border-slate-800 pt-3 sm:flex-row sm:justify-end">
+  <div class="flex flex-col gap-2 border-t border-slate-200 pt-3 sm:flex-row sm:justify-end dark:border-slate-800">
       <button
         type="button"
-        class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
+  class="rounded-lg border px-4 py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
         on:click={resetFilters}
       >
         Reset filters
@@ -374,12 +394,12 @@
     </div>
   </form>
 
-  <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-950/60">
     {#if loading}
-      <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-400">Loading transactions...</div>
+  <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-600 dark:text-slate-400">Loading transactions...</div>
     {:else if error}
       <div class="space-y-3 px-6 py-12 text-center">
-        <p class="text-sm text-red-300">{error}</p>
+  <p class="text-sm text-red-600 dark:text-red-300">{error}</p>
         <button
           type="button"
           class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
@@ -389,36 +409,36 @@
         </button>
       </div>
     {:else if transactions.length === 0}
-      <div class="px-6 py-16 text-center text-sm text-slate-400">No transactions yet. Adjust filters or create a new one.</div>
+  <div class="px-6 py-16 text-center text-sm text-slate-600 dark:text-slate-400">No transactions yet. Adjust filters or create a new one.</div>
     {:else}
-      <table class="min-w-full divide-y divide-slate-800 text-sm">
-        <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
+      <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+        <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3 text-left">Date</th>
             <th class="px-4 py-3 text-left">Description</th>
             <th class="px-4 py-3 text-left hidden sm:table-cell">Category</th>
             <th class="px-4 py-3 text-left hidden md:table-cell">Account</th>
-            <th class="px-4 py-3 text-left">Amount</th>
+            <th class="px-4 py-3 text-left">Amount <span title={currencyName} class="text-[10px] text-slate-500 align-middle">({currency})</span></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-900/70">
+  <tbody class="divide-y divide-slate-200 dark:divide-slate-900/70">
           {#each transactions as transaction (transaction.id)}
             <tr>
-              <td class="px-4 py-3 text-slate-200">{formatDate(transaction.occurredAt)}</td>
+              <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{formatDate(transaction.occurredAt)}</td>
               <td class="px-4 py-3">
-                <div class="text-slate-100">{transaction.notes ?? '(No description)'}</div>
+                <div class="text-slate-900 dark:text-slate-100">{transaction.notes ?? '(No description)'}</div>
                 {#if transaction.tags.length}
                   <div class="mt-1 text-xs text-slate-500">{transaction.tags.join(', ')}</div>
                 {/if}
               </td>
-              <td class="px-4 py-3 text-slate-200 hidden sm:table-cell">{transaction.categoryName ?? (transaction.type === 'TRANSFER' ? 'Transfer' : 'Uncategorised')}</td>
-              <td class="px-4 py-3 text-slate-200 hidden md:table-cell">
+              <td class="px-4 py-3 text-slate-700 dark:text-slate-200 hidden sm:table-cell">{transaction.categoryName ?? (transaction.type === 'TRANSFER' ? 'Transfer' : 'Uncategorised')}</td>
+              <td class="px-4 py-3 text-slate-700 dark:text-slate-200 hidden md:table-cell">
                 <div>{transaction.accountName}</div>
                 {#if transaction.transferAccountName}
-                  <div class="text-xs text-slate-500">? {transaction.transferAccountName}</div>
+                  <div class="text-xs text-slate-500">→ {transaction.transferAccountName}</div>
                 {/if}
               </td>
-              <td class={`px-4 py-3 text-right font-semibold ${amountClass(transaction)}`}>
+              <td class={`px-4 py-3 text-right font-semibold ${amountClass(transaction)}`} title={currencyName}>
                 {formatAmount(transaction)}
               </td>
             </tr>
@@ -429,12 +449,12 @@
   </div>
 
   {#if !loading && pageCount > 1}
-    <div class="flex items-center justify-between text-sm text-slate-300">
+  <div class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
       <span>Showing page {page} of {pageCount}  -  {total} transactions</span>
       <div class="flex items-center gap-2">
         <button
           type="button"
-          class="rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-200 transition hover:border-slate-600 hover:text-white disabled:opacity-50"
+          class="rounded-lg border px-3 py-1.5 text-xs transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
           on:click={() => changePage(-1)}
           disabled={page === 1}
         >
@@ -442,7 +462,7 @@
         </button>
         <button
           type="button"
-          class="rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-200 transition hover:border-slate-600 hover:text-white disabled:opacity-50"
+          class="rounded-lg border px-3 py-1.5 text-xs transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
           on:click={() => changePage(1)}
           disabled={page === pageCount}
         >

@@ -144,46 +144,46 @@
 <div class="space-y-6">
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h2 class="text-2xl font-semibold text-slate-100">Categories</h2>
-      <p class="text-sm text-slate-400">Group transactions into a clear financial taxonomy.</p>
+      <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Categories</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400">Group transactions into a clear financial taxonomy.</p>
     </div>
     <button
       type="button"
-      class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+      class="rounded-md border border-indigo-600 bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-700 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       on:click={() => openCreate(null)}
     >
       New category
     </button>
   </div>
 
-  <div class="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60">
+  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
     {#if loading}
-      <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-400">Loading categories...</div>
+      <div class="flex items-center justify-center px-6 py-16 text-sm text-slate-600 dark:text-slate-400">Loading categories...</div>
     {:else if error}
       <div class="space-y-3 px-6 py-12 text-center">
-        <p class="text-sm text-red-300">{error}</p>
+        <p class="text-sm text-rose-600 dark:text-red-300">{error}</p>
         <button
           type="button"
-          class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+          class="rounded-md border border-indigo-600 bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-700 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           on:click={() => loadCategories()}
         >
           Try again
         </button>
       </div>
     {:else if categoryRows.length === 0}
-      <div class="px-6 py-16 text-center text-sm text-slate-400">No categories yet. Create one to start organising transactions.</div>
+      <div class="px-6 py-16 text-center text-sm text-slate-600 dark:text-slate-400">No categories yet. Create one to start organising transactions.</div>
     {:else}
-      <table class="w-full divide-y divide-slate-800 text-sm">
-        <thead class="bg-slate-950/80 text-xs uppercase tracking-wide text-slate-400">
+      <table class="w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3 text-left">Category</th>
             <th class="px-4 py-3 text-left">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-900/70">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-900/70">
           {#each categoryRows as row (row.node.id)}
             <tr>
-              <td class="px-4 py-3 text-slate-100">
+              <td class="px-4 py-3 text-slate-900 dark:text-slate-100">
                 <div style={`padding-left: ${row.depth * 20}px`} class="flex items-center gap-2">
                   {row.node.name}
                 </div>
@@ -192,21 +192,21 @@
                 <div class="flex gap-2">
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-200 transition hover:border-slate-500 hover:text-white"
+                    class="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
                     on:click={() => openEdit(row.node)}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-200 transition hover:border-slate-500 hover:text-white"
+                    class="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
                     on:click={() => openCreate(row.node.id)}
                   >
                     Add child
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-red-500/50 px-3 py-1 text-xs text-red-200 transition hover:border-red-400 hover:text-white"
+                    class="rounded-md border border-rose-500/60 px-3 py-1 text-xs text-rose-700 transition hover:border-rose-600 hover:text-rose-900 dark:border-red-500/50 dark:text-red-200 dark:hover:border-red-400 dark:hover:text-white"
                     on:click={() => handleDelete(row.node)}
                   >
                     Delete

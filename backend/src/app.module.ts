@@ -10,6 +10,10 @@ import { ReportsModule } from './reports/reports.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import { AppController } from './app.controller';
+import { AuditModule } from './audit/audit.module';
+import { AuditInterceptor } from './audit/audit.interceptor';
+import { AdminModule } from './admin/admin.module';
+import { AdminController } from './admin/admin.controller';
 
 @Module({
   imports: [
@@ -17,6 +21,8 @@ import { AppController } from './app.controller';
       isGlobal: true,
     }),
     PrismaModule,
+    AuditModule,
+    AdminModule,
     AuthModule,
     UsersModule,
     MeModule,
@@ -24,11 +30,15 @@ import { AppController } from './app.controller';
     FinanceModule,
     ReportsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AdminController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
       useClass: ApiResponseInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
     },
   ],
 })

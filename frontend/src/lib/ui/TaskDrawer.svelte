@@ -163,18 +163,18 @@
     ></button>
 
     <div
-      class="relative z-[101] flex h-full w-full max-w-3xl flex-col border-l border-slate-800 bg-slate-950/95 text-slate-100 shadow-2xl shadow-slate-900/80"
+      class="relative z-[101] flex h-full w-full max-w-3xl flex-col border-l border-slate-200 bg-white text-slate-900 shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-100 dark:shadow-slate-900/80"
     >
-      <div class="flex items-start justify-between border-b border-slate-800 px-6 py-4">
+      <div class="flex items-start justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
         <div>
-          <h2 class="text-xl font-semibold">{heading()}</h2>
+          <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{heading()}</h2>
           {#if mode === 'edit' && task?.title}
-            <p class="text-xs text-slate-500">Last updated {new Date(task.updatedAt).toLocaleString()}</p>
+            <p class="text-xs text-slate-600 dark:text-slate-500">Last updated {new Date(task.updatedAt).toLocaleString()}</p>
           {/if}
         </div>
         <button
           type="button"
-          class="rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-300 transition hover:border-slate-600 hover:text-white"
+          class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
           on:click={closeDrawer}
         >
           Close
@@ -215,10 +215,10 @@
         {#if activeTab === 'details'}
           <form class="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-6" on:submit|preventDefault={handleSubmit}>
             <div class="space-y-2">
-              <label class="text-sm font-medium" for="task-title">Title *</label>
+              <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-title">Title *</label>
               <input
                 id="task-title"
-                class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                 placeholder="Write a concise title"
                 bind:value={title}
                 required
@@ -226,10 +226,10 @@
             </div>
 
             <div class="space-y-2">
-              <label class="text-sm font-medium" for="task-description">Description</label>
+              <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-description">Description</label>
               <textarea
                 id="task-description"
-                class="min-h-[120px] w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                class="min-h-[120px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                 placeholder="Add more context for this task"
                 bind:value={description}
               ></textarea>
@@ -237,10 +237,10 @@
 
             <div class="grid gap-4 md:grid-cols-2">
               <div class="space-y-2">
-                <label class="text-sm font-medium" for="task-status">Status</label>
+                <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-status">Status</label>
                 <select
                   id="task-status"
-                  class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                   bind:value={status}
                 >
                   {#each TASK_STATUS_OPTIONS as option}
@@ -250,10 +250,10 @@
               </div>
 
               <div class="space-y-2">
-                <label class="text-sm font-medium" for="task-priority">Priority</label>
+                <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-priority">Priority</label>
                 <select
                   id="task-priority"
-                  class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                   bind:value={priority}
                 >
                   {#each TASK_PRIORITY_OPTIONS as option}
@@ -263,20 +263,20 @@
               </div>
 
               <div class="space-y-2">
-                <label class="text-sm font-medium" for="task-due">Due date</label>
+                <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-due">Due date</label>
                 <input
                   id="task-due"
                   type="date"
-                  class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                   bind:value={dueDate}
                 />
               </div>
 
               <div class="space-y-2">
-                <label class="text-sm font-medium" for="task-rrule">Recurrence (RRULE)</label>
+                <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-rrule">Recurrence (RRULE)</label>
                 <input
                   id="task-rrule"
-                  class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                   placeholder="e.g. FREQ=WEEKLY;COUNT=5"
                   bind:value={repeatRRule}
                 />
@@ -284,26 +284,26 @@
             </div>
 
             <div class="space-y-2">
-              <label class="text-sm font-medium" for="task-tags">Tags</label>
+              <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-tags">Tags</label>
               <input
                 id="task-tags"
-                class="w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                 placeholder="Comma separated tags"
                 bind:value={tagsInput}
               />
-              <p class="text-xs text-slate-500">Tags help with filtering — example: finance, reporting.</p>
+              <p class="text-xs text-slate-600 dark:text-slate-500">Tags help with filtering â€” example: finance, reporting.</p>
             </div>
 
             {#if parentId}
-              <div class="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-400">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                 This task will be created as a subtask.
               </div>
             {/if}
 
-            <div class="flex flex-col gap-2 border-t border-slate-800 pt-4 sm:flex-row sm:justify-end">
+            <div class="flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end dark:border-slate-800">
               <button
                 type="button"
-                class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
+                class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
                 on:click={closeDrawer}
                 disabled={isSaving}
               >
@@ -311,7 +311,7 @@
               </button>
               <button
                 type="submit"
-                class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-70"
+                class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isSaving}
               >
                 {isSaving ? 'Saving...' : mode === 'edit' ? 'Save changes' : 'Create task'}
@@ -322,32 +322,32 @@
           <div class="flex flex-1 flex-col overflow-hidden">
             <div class="flex-1 space-y-4 overflow-y-auto px-6 py-6">
               {#if commentsLoading}
-                <p class="text-sm text-slate-500">Loading comments...</p>
+                <p class="text-sm text-slate-600 dark:text-slate-500">Loading comments...</p>
               {:else if comments.length === 0}
-                <p class="text-sm text-slate-500">No comments yet. Start the conversation below.</p>
+                <p class="text-sm text-slate-600 dark:text-slate-500">No comments yet. Start the conversation below.</p>
               {:else}
                 <ul class="space-y-4">
                   {#each comments as comment}
-                    <li class="rounded-lg border border-slate-800 bg-slate-900/80 px-4 py-3">
-                      <p class="text-sm text-slate-100">{comment.text}</p>
-                      <p class="mt-2 text-xs text-slate-500">Posted {new Date(comment.createdAt).toLocaleString()}</p>
+                    <li class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/80">
+                      <p class="text-sm text-slate-900 dark:text-slate-100">{comment.text}</p>
+                      <p class="mt-2 text-xs text-slate-600 dark:text-slate-500">Posted {new Date(comment.createdAt).toLocaleString()}</p>
                     </li>
                   {/each}
                 </ul>
               {/if}
             </div>
-            <form class="border-t border-slate-800 px-6 py-4" on:submit={handleCommentSubmit}>
-              <label class="text-sm font-medium" for="task-comment">Add a comment</label>
+            <form class="border-t border-slate-200 px-6 py-4 dark:border-slate-800" on:submit={handleCommentSubmit}>
+              <label class="text-sm font-medium text-slate-900 dark:text-slate-200" for="task-comment">Add a comment</label>
               <textarea
                 id="task-comment"
-                class="mt-2 min-h-[100px] w-full rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                class="mt-2 min-h-[100px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
                 placeholder="Share progress or next steps..."
                 bind:value={commentText}
               ></textarea>
               <div class="mt-3 flex justify-end">
                 <button
                   type="submit"
-                  class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
                   disabled={isCommentSubmitting}
                 >
                   {isCommentSubmitting ? 'Posting...' : 'Post comment'}

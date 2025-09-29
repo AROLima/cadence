@@ -54,5 +54,9 @@
         {submitting ? 'Signing in…' : 'Sign in'}
       </button>
     </form>
+      <p class="text-xs text-slate-400 text-center">
+        New to Cadence?
+        <a href="/register" class="text-slate-200 underline hover:text-white">Create an account</a>
+      </p>
   </div>
 </div>

@@ -7,6 +7,11 @@ import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateMeDto } from './dto/update-me.dto';
+import {
+  DEFAULT_MY_SETTINGS,
+  type MySettings,
+  type UpdateMySettingsDto,
+} from './dto/update-my-settings.dto';
 
 export interface MeView {
   id: number;
@@ -85,6 +90,54 @@ export class MeService {
       role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+    };
+  }
+
+  async getMySettings(userId: number): Promise<MySettings> {
+    const row = await this.prisma.userSetting.findUnique({
+      where: { userId_key: { userId, key: 'preferences' } },
+    });
+    const stored = (row?.value as Partial<MySettings>) ?? {};
+    return this.mergeSettings(stored);
+  }
+
+  async updateMySettings(
+    userId: number,
+    patch: UpdateMySettingsDto,
+  ): Promise<MySettings> {
+    // Read current
+    const existing = await this.prisma.userSetting.findUnique({
+      where: { userId_key: { userId, key: 'preferences' } },
+    });
+    const current = (existing?.value as Partial<MySettings>) ?? {};
+
+    // Merge shallow for top-level, nested for notifications
+    const next: Partial<MySettings> = {
+      ...current,
+      ...patch,
+      notifications: {
+        ...(current.notifications ?? {}),
+        ...(patch.notifications ?? {}),
+      } as MySettings['notifications'],
+    };
+
+    await this.prisma.userSetting.upsert({
+      where: { userId_key: { userId, key: 'preferences' } },
+      update: { value: next as unknown as object },
+      create: { userId, key: 'preferences', value: next as unknown as object },
+    });
+
+    return this.mergeSettings(next);
+  }
+
+  private mergeSettings(partial: Partial<MySettings>): MySettings {
+    return {
+      ...DEFAULT_MY_SETTINGS,
+      ...partial,
+      notifications: {
+        ...DEFAULT_MY_SETTINGS.notifications,
+        ...(partial.notifications ?? {}),
+      },
     };
   }
 }
