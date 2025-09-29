@@ -19,12 +19,15 @@ export class AuthenticatedUserDto {
 }
 
 export class AuthResponseDto {
+  /** Short-lived JWT for API calls */
   @ApiProperty()
   accessToken!: string;
 
+  /** Long-lived token used to obtain new access tokens */
   @ApiProperty()
   refreshToken!: string;
 
+  /** Snapshot of the authenticated user used by the client */
   @ApiProperty({ type: AuthenticatedUserDto })
   user!: AuthenticatedUserDto;
 }

@@ -1,4 +1,9 @@
-﻿import {
+﻿/**
+ * PrismaService
+ * - Extends PrismaClient to integrate with Nest lifecycle
+ * - Provides clean connect/disconnect hooks and a graceful shutdown helper
+ */
+import {
   INestApplication,
   Injectable,
   OnModuleDestroy,
@@ -36,6 +41,7 @@ export class PrismaService
   }
 
   enableShutdownHooks(app: INestApplication) {
+    // Close Nest app and DB client gracefully on termination signals
     const shutdown = async (signal: string) => {
       console.log(`\nShutting down gracefully on ${signal}...`);
       try {

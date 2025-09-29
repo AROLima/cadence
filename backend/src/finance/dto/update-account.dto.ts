@@ -4,6 +4,7 @@ import { IsNumber, IsOptional, Min } from 'class-validator';
 import { CreateAccountDto } from './create-account.dto';
 
 export class UpdateAccountDto extends PartialType(CreateAccountDto) {
+  /** Allows changing the opening balance; undefined means no change */
   @ApiPropertyOptional({ example: 1500.75 })
   @IsOptional()
   @Transform(({ value }): number | undefined => {

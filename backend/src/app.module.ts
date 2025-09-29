@@ -1,3 +1,10 @@
+/**
+ * AppModule
+ * - Central wiring of all feature modules (Auth, Users, Me, Tasks, Finance, Reports, Admin)
+ * - Applies two global interceptors via APP_INTERCEPTOR provider token:
+ *   - ApiResponseInterceptor: normalizes successful responses into a consistent envelope
+ *   - AuditInterceptor: records write operations into AuditLog for traceability
+ */
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';

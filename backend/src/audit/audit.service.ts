@@ -1,3 +1,8 @@
+/**
+ * AuditService
+ * - Persists audit entries to the AuditLog table
+ * - Truncates oversized payloads to prevent bloating the DB
+ */
 import { Injectable } from '@nestjs/common';
 /* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/require-await */
 import { PrismaService } from '../prisma/prisma.service';

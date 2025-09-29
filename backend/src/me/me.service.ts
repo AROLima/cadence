@@ -27,6 +27,7 @@ export class MeService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getProfile(userId: number): Promise<MeView> {
+    // Fetch the current user by id; throws 404 if not found
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
@@ -37,6 +38,7 @@ export class MeService {
   }
 
   async updateProfile(userId: number, dto: UpdateMeDto): Promise<MeView> {
+    // First ensure user exists so we can validate current password below
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
@@ -50,6 +52,7 @@ export class MeService {
     }
 
     if (dto.password) {
+      // If changing password, require the current password and verify it
       if (!dto.currentPassword) {
         throw new BadRequestException(
           'Current password is required to set a new password',
@@ -64,6 +67,7 @@ export class MeService {
         throw new BadRequestException('Current password is incorrect');
       }
 
+      // Store only the hash, never the raw password
       updateData.passwordHash = await bcrypt.hash(dto.password, 10);
     }
 
@@ -94,7 +98,16 @@ export class MeService {
   }
 
   async getMySettings(userId: number): Promise<MySettings> {
-    const row = await this.prisma.userSetting.findUnique({
+    // Read the row stored under the composite unique key (userId + key)
+    // We use key = 'preferences' to hold the entire MySettings object as JSON
+    const userSetting = (this.prisma as unknown as Record<string, any>)[
+      'userSetting'
+    ] as {
+      findUnique: (args: {
+        where: { userId_key: { userId: number; key: string } };
+      }) => Promise<{ value: unknown } | null>;
+    };
+    const row = await userSetting.findUnique({
       where: { userId_key: { userId, key: 'preferences' } },
     });
     const stored = (row?.value as Partial<MySettings>) ?? {};
@@ -106,12 +119,25 @@ export class MeService {
     patch: UpdateMySettingsDto,
   ): Promise<MySettings> {
     // Read current
-    const existing = await this.prisma.userSetting.findUnique({
+    const userSetting = (this.prisma as unknown as Record<string, any>)[
+      'userSetting'
+    ] as {
+      findUnique: (args: {
+        where: { userId_key: { userId: number; key: string } };
+      }) => Promise<{ value: unknown } | null>;
+      upsert: (args: {
+        where: { userId_key: { userId: number; key: string } };
+        update: { value: object };
+        create: { userId: number; key: string; value: object };
+      }) => Promise<unknown>;
+    };
+    const existing = await userSetting.findUnique({
       where: { userId_key: { userId, key: 'preferences' } },
     });
     const current = (existing?.value as Partial<MySettings>) ?? {};
 
     // Merge shallow for top-level, nested for notifications
+    // Shallow merge top-level, but merge the nested notifications object
     const next: Partial<MySettings> = {
       ...current,
       ...patch,
@@ -121,7 +147,8 @@ export class MeService {
       } as MySettings['notifications'],
     };
 
-    await this.prisma.userSetting.upsert({
+    // Upsert so we create the row on first save and update it thereafter
+    await userSetting.upsert({
       where: { userId_key: { userId, key: 'preferences' } },
       update: { value: next as unknown as object },
       create: { userId, key: 'preferences', value: next as unknown as object },
@@ -131,6 +158,7 @@ export class MeService {
   }
 
   private mergeSettings(partial: Partial<MySettings>): MySettings {
+    // Merge provided values onto defaults; notifications merged deeply
     return {
       ...DEFAULT_MY_SETTINGS,
       ...partial,

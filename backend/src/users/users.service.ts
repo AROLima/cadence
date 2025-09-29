@@ -20,6 +20,11 @@ export interface UserView {
   updatedAt: Date;
 }
 
+/**
+ * UsersService
+ * - Provides admin-side operations over User entities
+ * - Demonstrates pagination, search, and Prisma error handling
+ */
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}

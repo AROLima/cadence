@@ -130,6 +130,12 @@ export interface BudgetView {
   actualAmount: number;
 }
 
+/**
+ * FinanceService
+ * - Business logic for Accounts, Categories, Transactions, Budgets
+ * - Uses Prisma `$transaction` for multi-row consistency (transfers, installments)
+ * - Uses `groupBy`/`aggregate` for efficient summaries
+ */
 @Injectable()
 export class FinanceService {
   constructor(private readonly prisma: PrismaService) {}

@@ -36,6 +36,11 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { FinanceService } from './finance.service';
 
+/**
+ * FinanceController
+ * REST endpoints for Accounts, Categories, Transactions and Budgets.
+ * All endpoints are authenticated; responses are wrapped by the API interceptor.
+ */
 @ApiTags('Finance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

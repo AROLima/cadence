@@ -112,7 +112,8 @@ export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
     user,
     tokens: {
       accessToken,
-      refreshToken: currentRefreshToken,
+      // Do not expose refresh token to the client; keep it httpOnly only
+      refreshToken: null,
     },
   };
 };

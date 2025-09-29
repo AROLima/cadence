@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 
 export class TaskQueryDto {
+  /** Filter by multiple statuses */
   @ApiPropertyOptional({ enum: TaskStatus, isArray: true })
   @IsOptional()
   @IsArray()
@@ -26,6 +27,7 @@ export class TaskQueryDto {
   })
   status?: TaskStatus[];
 
+  /** Filter by multiple priorities */
   @ApiPropertyOptional({ enum: TaskPriority, isArray: true })
   @IsOptional()
   @IsArray()
@@ -41,21 +43,25 @@ export class TaskQueryDto {
   })
   priority?: TaskPriority[];
 
+  /** Due date range start */
   @ApiPropertyOptional({ type: String, format: 'date-time' })
   @IsOptional()
   @IsDateString()
   dueFrom?: string;
 
+  /** Due date range end */
   @ApiPropertyOptional({ type: String, format: 'date-time' })
   @IsOptional()
   @IsDateString()
   dueTo?: string;
 
+  /** Single tag filter */
   @ApiPropertyOptional({ description: 'Filter by a single tag name' })
   @IsOptional()
   @IsString()
   tag?: string;
 
+  /** Multiple tags filter */
   @ApiPropertyOptional({
     type: [String],
     description: 'Filter by one or more tag names',
@@ -73,6 +79,7 @@ export class TaskQueryDto {
   })
   tags?: string[];
 
+  /** Full text search on title/description */
   @ApiPropertyOptional({
     description: 'Full text search on title or description',
   })
@@ -80,6 +87,7 @@ export class TaskQueryDto {
   @IsString()
   q?: string;
 
+  /** Include subtasks in root listing */
   @ApiPropertyOptional({
     description: 'Include subtasks in top-level listing',
     default: false,

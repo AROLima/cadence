@@ -9,6 +9,12 @@ import { tap } from 'rxjs/operators';
 import { AuditService } from './audit.service';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 
+/**
+ * AuditInterceptor
+ * - Intercepts mutating HTTP methods and captures an audit trail entry
+ * - Scrubs sensitive fields (passwords, tokens) from request bodies
+ * - Sends the sanitized snapshot to AuditService asynchronously
+ */
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly audit: AuditService) {}

@@ -1,3 +1,13 @@
+/**
+ * Application bootstrap
+ * - Creates Nest app with Express adapter
+ * - Applies security middlewares (Helmet, rate limiting)
+ * - Sets up CORS based on env (strict in prod, relaxed in dev)
+ * - Enables class-validation globally (whitelist + transform)
+ * - Optionally exposes Swagger docs (disabled by default in prod)
+ * - Binds graceful shutdown hooks via PrismaService
+ * - Listens on HOST/PORT and tries to mount AdminJS at /admin (best effort)
+ */
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';

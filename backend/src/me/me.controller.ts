@@ -13,6 +13,7 @@ import { UpdateMeDto } from './dto/update-me.dto';
 import { MeService } from './me.service';
 import { UpdateMySettingsDto } from './dto/update-my-settings.dto';
 
+// "Me" scoped endpoints; all require authentication via JWT
 @ApiTags('Me')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -20,6 +21,7 @@ import { UpdateMySettingsDto } from './dto/update-my-settings.dto';
 export class MeController {
   constructor(private readonly meService: MeService) {}
 
+  // GET /me → return the current authenticated profile
   @Get()
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiOkResponse({ description: 'Returns the authenticated user profile.' })
@@ -28,6 +30,7 @@ export class MeController {
     return createApiResponse(profile);
   }
 
+  // PATCH /me → update profile (name or password). Password change requires currentPassword.
   @Patch()
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiBody({ type: UpdateMeDto })
@@ -37,6 +40,7 @@ export class MeController {
     return createApiResponse(profile);
   }
 
+  // GET /me/settings → merged preferences (defaults + stored row in UserSetting)
   @Get('settings')
   @ApiOperation({ summary: 'Get my settings/preferences' })
   @ApiOkResponse({ description: 'Returns merged settings with defaults.' })
@@ -45,6 +49,7 @@ export class MeController {
     return createApiResponse(settings);
   }
 
+  // PATCH /me/settings → update preferences (shallow merge + deep merge for notifications)
   @Patch('settings')
   @ApiOperation({ summary: 'Update my settings/preferences' })
   @ApiBody({ type: UpdateMySettingsDto })

@@ -30,6 +30,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import { UsersService } from './users.service';
 
+/**
+ * UsersController (Admin scope)
+ * - Admin-only CRUD endpoints for managing user accounts
+ * - Supports pagination, search, and role filtering
+ */
 @ApiTags('Users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)

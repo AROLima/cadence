@@ -14,6 +14,11 @@ let AdminJS: typeof AdminJSType | undefined;
 let AdminJSExpress: unknown;
 let AdminJSPrisma: unknown;
 
+/**
+ * AdminModule
+ * - Lazily loads AdminJS and mounts UI if dependencies are available
+ * - Exposes controllers to manage admin settings and infra toggles
+ */
 @Module({
   providers: [PrismaService, UsersService, ConfigService, AdminMountService],
   exports: [AdminMountService],

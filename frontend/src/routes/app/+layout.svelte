@@ -38,7 +38,8 @@
     authStore.setAuth({
       user: data.user,
       accessToken: data.tokens.accessToken,
-      refreshToken: data.tokens.refreshToken,
+      // Do not persist refreshToken client-side; it remains httpOnly on the server
+      refreshToken: null,
     });
   }
 

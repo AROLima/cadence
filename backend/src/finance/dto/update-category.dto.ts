@@ -4,6 +4,7 @@ import { IsInt, IsOptional, Min } from 'class-validator';
 import { CreateCategoryDto } from './create-category.dto';
 
 export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
+  /** Optional parent id; use null to remove parent, undefined to keep as is */
   @ApiPropertyOptional({ description: 'Parent category id', nullable: true })
   @IsOptional()
   @Transform(({ value }): number | null | undefined => {

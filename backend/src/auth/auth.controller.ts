@@ -1,4 +1,13 @@
-﻿import {
+﻿/**
+ * AuthController
+ * Endpoints for authentication lifecycle:
+ * - POST /auth/register → create account, return tokens
+ * - POST /auth/login → authenticate and issue tokens
+ * - POST /auth/refresh → exchange refresh token for new tokens
+ * - POST /auth/logout → revoke refresh tokens for the current user
+ * Swagger decorators document inputs/outputs; guards are applied where needed.
+ */
+import {
   Body,
   Controller,
   Post,
@@ -34,6 +43,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  // Create a new user account and return access/refresh tokens
   @ApiOperation({ summary: 'Create a new account' })
   @ApiCreatedResponse({ type: AuthResponseDto })
   async register(@Body() registerDto: RegisterDto) {
@@ -43,6 +53,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  // Authenticate using email/password and return tokens
   @ApiOperation({ summary: 'Authenticate with email and password' })
   @ApiOkResponse({ type: AuthResponseDto })
   async login(@Body() loginDto: LoginDto) {
@@ -53,6 +64,7 @@ export class AuthController {
   @Public()
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
+  // Use refresh token (guard-validated) to mint new tokens
   @ApiOperation({ summary: 'Refresh authentication tokens' })
   @ApiBody({ type: RefreshTokenDto, required: false })
   @ApiOkResponse({ type: AuthResponseDto })
@@ -74,6 +86,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
+  // Revoke active refresh tokens for the authenticated user
   @ApiOperation({ summary: 'Invalidate active refresh tokens' })
   async logout(@CurrentUser('id') userId: number) {
     await this.authService.logout(userId);

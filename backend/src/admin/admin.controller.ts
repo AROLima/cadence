@@ -14,6 +14,10 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { createApiResponse } from '../common/dto/api-response.dto';
 
+/**
+ * AdminController (tools)
+ * - Small set of admin utilities for operational tasks (revoke tokens, reassign, recalc)
+ */
 @ApiTags('Admin Tools')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)

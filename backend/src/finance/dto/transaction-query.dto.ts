@@ -16,6 +16,7 @@ import {
 } from 'class-validator';
 
 export class TransactionQueryDto {
+  /** Filter by multiple transaction types */
   @ApiPropertyOptional({ enum: TransactionType, isArray: true })
   @IsOptional()
   @IsArray()
@@ -33,6 +34,7 @@ export class TransactionQueryDto {
   })
   type?: TransactionType[];
 
+  /** Account filter */
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(({ value }): number | undefined => {
@@ -45,6 +47,7 @@ export class TransactionQueryDto {
   @Min(1)
   accountId?: number;
 
+  /** Category filter */
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(({ value }): number | undefined => {
@@ -57,6 +60,7 @@ export class TransactionQueryDto {
   @Min(1)
   categoryId?: number;
 
+  /** Date range start; also aceita alias dateFrom/from */
   @ApiPropertyOptional({
     name: 'dateFrom',
 
@@ -81,6 +85,7 @@ export class TransactionQueryDto {
   })
   from?: string;
 
+  /** Date range end; também aceita alias dateTo/to */
   @ApiPropertyOptional({
     name: 'dateTo',
 
@@ -105,6 +110,7 @@ export class TransactionQueryDto {
   })
   to?: string;
 
+  /** Minimum amount */
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
   @Transform(({ value }): number | undefined => {
@@ -117,6 +123,7 @@ export class TransactionQueryDto {
   @IsNumber()
   minAmount?: number;
 
+  /** Maximum amount */
   @ApiPropertyOptional({ example: 500 })
   @IsOptional()
   @Transform(({ value }): number | undefined => {
@@ -129,6 +136,7 @@ export class TransactionQueryDto {
   @IsNumber()
   maxAmount?: number;
 
+  /** Tags (array ou lista separada por vírgula) */
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -151,6 +159,7 @@ export class TransactionQueryDto {
   })
   tags?: string[];
 
+  /** Full-text search (notes, attachments, related names) */
   @ApiPropertyOptional({
     description: 'Full text search by notes, attachments, or related names',
   })

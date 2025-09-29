@@ -15,6 +15,7 @@ import {
 } from 'class-validator';
 
 export class UpdateTaskDto {
+  /** Optional new title */
   @ApiPropertyOptional({ example: 'Review quarterly budget' })
   @IsOptional()
   @IsString()
@@ -22,6 +23,7 @@ export class UpdateTaskDto {
   @MaxLength(255)
   title?: string;
 
+  /** Optional new description */
   @ApiPropertyOptional({
     example: 'Ensure all expense reports are collected',
     maxLength: 5000,
@@ -30,21 +32,25 @@ export class UpdateTaskDto {
   @IsString()
   description?: string;
 
+  /** Update status */
   @ApiPropertyOptional({ enum: TaskStatus })
   @IsOptional()
   @IsEnum(TaskStatus)
   status?: TaskStatus;
 
+  /** Update priority */
   @ApiPropertyOptional({ enum: TaskPriority })
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
 
+  /** Update due date or set null to clear */
   @ApiPropertyOptional({ type: String, format: 'date-time' })
   @IsOptional()
   @IsDateString()
   dueDate?: string | null;
 
+  /** Update RRULE or set null to clear */
   @ApiPropertyOptional({
     description: 'RFC5545 RRULE definition for repeating tasks',
   })
@@ -52,6 +58,7 @@ export class UpdateTaskDto {
   @IsString()
   repeatRRule?: string | null;
 
+  /** Replace tags with the provided list */
   @ApiPropertyOptional({ type: [String], example: ['finance', 'reporting'] })
   @IsOptional()
   @IsArray()
@@ -66,6 +73,7 @@ export class UpdateTaskDto {
   })
   tagNames?: string[];
 
+  /** Change parent (number), detach (null) ou manter (undefined) */
   @ApiPropertyOptional({
     description: 'Parent task identifier or null to detach',
     nullable: true,
