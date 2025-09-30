@@ -8,6 +8,11 @@ export interface ApiRequestOptions extends globalThis.RequestInit {
   baseUrl?: string;
   skipAuth?: boolean;
   retry?: boolean;
+  // optional retry configuration for 429s
+  retry429?: {
+    maxRetries?: number; // default 2
+    baseDelayMs?: number; // default 250
+  };
 }
 
 interface RefreshResponse {
@@ -78,28 +83,41 @@ async function requestWithRetry(
   input: string,
   options: ApiRequestOptions = {},
 ): Promise<Response> {
-  const response = await performFetch(input, options);
+  // Inner runner with optional 429 retry for safe/idempotent requests
+  const attempt = async (attemptNo: number): Promise<Response> => {
+    const resp = await performFetch(input, options);
 
-  if (
-    response.status !== 401 ||
-    options.skipAuth ||
-    !browser ||
-    options.retry
-  ) {
-    return response;
-  }
+    // 401 -> try token refresh once (client-side only)
+    if (resp.status === 401 && !options.skipAuth && browser && !options.retry) {
+      const refreshed = await refreshTokens();
+      if (!refreshed?.accessToken) {
+        authStore.clearAuth();
+        goto('/login');
+        return resp;
+      }
+      const retryHeaders = new Headers(options.headers ?? {});
+      retryHeaders.set('Authorization', `Bearer ${refreshed.accessToken}`);
+      return performFetch(input, { ...options, headers: retryHeaders, retry: true });
+    }
 
-  const refreshed = await refreshTokens();
-  if (!refreshed?.accessToken) {
-    authStore.clearAuth();
-    goto('/login');
-    return response;
-  }
+    // 429 -> exponential backoff retry for GET/HEAD only
+    if (
+      resp.status === 429 &&
+      (options.method == null || /^(get|head)$/i.test(String(options.method)))
+    ) {
+      const { maxRetries = 2, baseDelayMs = 250 } = options.retry429 ?? {};
+      if (attemptNo < maxRetries) {
+        const jitter = Math.random() * baseDelayMs;
+        const delay = baseDelayMs * Math.pow(2, attemptNo) + jitter;
+        await new Promise((r) => setTimeout(r, delay));
+        return attempt(attemptNo + 1);
+      }
+    }
 
-  const retryHeaders = new Headers(options.headers ?? {});
-  retryHeaders.set('Authorization', `Bearer ${refreshed.accessToken}`);
+    return resp;
+  };
 
-  return performFetch(input, { ...options, headers: retryHeaders, retry: true });
+  return attempt(0);
 }
 
 async function requestJson<T>(

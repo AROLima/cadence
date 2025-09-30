@@ -6,6 +6,7 @@
 		import { getCategoryTree } from '$lib/api/finance';
 		import { fetchExpensesByCategory } from '$lib/api/reports';
 		import { onDestroy } from 'svelte';
+  import { clickOutside } from '$lib/utils/clickOutside';
 
 	type Budget = {
 		id: number;
@@ -538,10 +539,10 @@
 			<h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Budgets</h2>
 			<p class="text-sm text-slate-600 dark:text-slate-400">Plan monthly budgets and track progress.</p>
 		</div>
-		<div class="flex items-center gap-2 flex-wrap sm:flex-nowrap gap-y-2">
+		<div class="flex items-center gap-2 flex-wrap md:flex-nowrap gap-y-2">
 			<button
 				type="button"
-				class="rounded-lg border px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
+				class="rounded-lg border px-2.5 py-1.5 md:px-3 md:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
 				on:click={() => { const y = clampInt(filterYear, 2000, 3000, now.getUTCFullYear()); const m = clampInt(filterMonth, 1, 12, now.getUTCMonth()+1); const p = prevMonth(y, m); filterYear = p.year; filterMonth = p.month; loadBudgetsDebounced(); }}
 			>
 				‹ Prev
@@ -565,21 +566,21 @@
 			/>
 			<button
 				type="button"
-				class="rounded-lg border px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
+				class="rounded-lg border px-2.5 py-1.5 md:px-3 md:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
 				on:click={() => { const y = clampInt(filterYear, 2000, 3000, now.getUTCFullYear()); const m = clampInt(filterMonth, 1, 12, now.getUTCMonth()+1); const n = nextMonth(y, m); filterYear = n.year; filterMonth = n.month; loadBudgetsDebounced(); }}
 			>
 				Next ›
 			</button>
 			<button
 				type="button"
-				class="rounded-lg border px-2.5 py-1.5 sm:px-4 sm:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
+				class="rounded-lg border px-2.5 py-1.5 md:px-4 md:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
 					on:click={() => loadBudgetsDebounced(0)}
 			>
 				Refresh
 			</button>
 			<button
 				type="button"
-				class="hidden sm:inline-flex rounded-lg border px-2.5 py-1.5 sm:px-4 sm:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
+				class="hidden md:inline-flex rounded-lg border px-2.5 py-1.5 md:px-4 md:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
 				on:click={() => { void loadRecommendations(); toasts.push({ title: 'Recommendations', description: 'Loaded 3-month averages.', variant: 'default' }); }}
 				title="Load 3-month average suggestions"
 			>
@@ -587,7 +588,7 @@
 			</button>
 			<button
 				type="button"
-				class="hidden sm:inline-flex rounded-lg border px-2.5 py-1.5 sm:px-4 sm:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
+				class="hidden md:inline-flex rounded-lg border px-2.5 py-1.5 md:px-4 md:py-2 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
 				on:click={copyFromPreviousMonthOverwrite}
 				title="Copy planned from last month for all categories, overwriting current planned"
 			>
@@ -595,7 +596,7 @@
 			</button>
 			<button
 				type="button"
-				class="hidden sm:inline-flex rounded-lg bg-indigo-600 px-2.5 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+				class="hidden md:inline-flex rounded-lg bg-indigo-600 px-2.5 py-1.5 md:px-4 md:py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
 				on:click={setPlannedToLastMonthActual}
 				title="Set planned to last month's actual for all categories"
 			>
@@ -603,15 +604,15 @@
 			</button>
 			<button
 				type="button"
-				class="hidden sm:inline-flex rounded-lg bg-slate-700 px-2.5 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold text-white transition hover:bg-slate-600"
+				class="hidden md:inline-flex rounded-lg bg-slate-700 px-2.5 py-1.5 md:px-4 md:py-2 text-sm font-semibold text-white transition hover:bg-slate-600"
 				on:click={copyFromPreviousMonth}
 				title="Copy planned amounts from previous month"
 			>
 				Copy last month
 			</button>
 
-			<!-- Mobile-only More menu toggle -->
-			<div class="relative sm:hidden">
+			<!-- More menu toggle (show below lg to save horizontal space) -->
+			<div class="relative block lg:hidden" use:clickOutside={{ enabled: showActionsMenu, handler: () => (showActionsMenu = false) }}>
 				<button type="button" class="inline-flex items-center rounded-lg border px-2.5 py-1.5 text-sm transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white" on:click={() => (showActionsMenu = !showActionsMenu)}>
 					More
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="ml-1 h-4 w-4"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.4a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
@@ -637,8 +638,8 @@
 	</div>
 
 		<div class="rounded-xl border border-slate-200 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-				<div class="grid gap-3 grid-cols-1 sm:grid-cols-4">
-					<div class="sm:col-span-2">
+				<div class="grid gap-3 grid-cols-1 sm:grid-cols-6 md:grid-cols-6">
+					<div class="sm:col-span-4 md:col-span-4">
 						<label for="budget-category-combobox" class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Category</label>
 						<div class="relative mt-1">
 							<input
@@ -691,10 +692,10 @@
 							placeholder="0.00"
 						/>
 					</div>
-					<div class="flex items-end">
+					<div class="sm:col-span-1 md:col-span-1 flex items-end">
 						<button
 							type="button"
-							class="w-full rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+							class="w-full sm:w-auto rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
 								on:click={() => { if (newCategoryId) bumpRecent(Number(newCategoryId)); void createBudget(); }}
 						>
 							Add budget
@@ -726,24 +727,24 @@
 		{:else if budgets.length === 0}
 			<div class="px-6 py-16 text-center text-sm text-slate-600 dark:text-slate-400">No budgets for the selected period.</div>
 		{:else}
-			<table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+						<table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
 				<thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
 					<tr>
-						<th class="px-4 py-3 text-left">Category</th>
-									<th class="px-4 py-3 text-right">Planned</th>
-						<th class="px-4 py-3 text-right">Actual</th>
-						<th class="px-4 py-3 text-right">Remaining</th>
-						<th class="px-4 py-3 text-right">Status</th>
-						<th class="px-4 py-3 text-right">Suggested (Avg 3m)</th>
-						<th class="px-4 py-3 text-right">Progress</th>
-						<th class="px-4 py-3 text-right"></th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-left">Category</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right">Planned</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right">Actual</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right hidden md:table-cell">Remaining</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right hidden md:table-cell">Status</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right hidden lg:table-cell">Suggested (Avg 3m)</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right hidden md:table-cell">Progress</th>
+									<th class="px-3 md:px-4 py-2 md:py-3 text-right hidden sm:table-cell"></th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-200 dark:divide-slate-900/70">
 					{#each budgets as b (b.id)}
 						<tr>
-							<td class="px-4 py-3 text-slate-900 dark:text-slate-100">{b.categoryName}</td>
-										<td class="px-4 py-3 text-right text-slate-700 dark:text-slate-200" title={currency}>
+										<td class="px-3 md:px-4 py-2 md:py-3 text-slate-900 dark:text-slate-100">{b.categoryName}</td>
+										<td class="px-3 md:px-4 py-2 md:py-3 text-right text-slate-700 dark:text-slate-200" title={currency}>
 											{#if editingId === b.id}
 												<div class="flex items-center justify-end gap-2">
 													<input
@@ -774,12 +775,21 @@
 														class="rounded-lg border px-2 py-1 text-xs transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
 														on:click={() => startEdit(b)}
 													>Edit</button>
+										<!-- Mobile inline delete -->
+										<button
+											type="button"
+											class="sm:hidden rounded-lg border px-2 py-1 text-xs transition border-red-300 text-red-600 hover:border-red-400 hover:text-red-700 dark:border-red-800 dark:text-red-300 dark:hover:border-red-600 dark:hover:text-red-200"
+											title="Delete budget"
+											on:click={() => deleteBudget(b.id)}
+										>
+											Delete
+										</button>
 												</div>
 											{/if}
-										</td>
-							<td class="px-4 py-3 text-right text-slate-700 dark:text-slate-200" title={currency}>{fmt(b.actualAmount)}</td>
-							<td class="px-4 py-3 text-right text-slate-700 dark:text-slate-200" title={currency}>{fmt(Math.max(0, b.plannedAmount - b.actualAmount))}</td>
-							<td class="px-4 py-3 text-right">
+							</td>
+							<td class="px-3 md:px-4 py-2 md:py-3 text-right text-slate-700 dark:text-slate-200" title={currency}>{fmt(b.actualAmount)}</td>
+							<td class="px-3 md:px-4 py-2 md:py-3 text-right text-slate-700 dark:text-slate-200 hidden md:table-cell" title={currency}>{fmt(Math.max(0, b.plannedAmount - b.actualAmount))}</td>
+							<td class="px-3 md:px-4 py-2 md:py-3 text-right hidden md:table-cell">
 								{#if b.actualAmount > b.plannedAmount}
 									<span class="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-500">Over</span>
 								{:else if b.actualAmount === b.plannedAmount && b.plannedAmount > 0}
@@ -790,7 +800,7 @@
 									<span class="text-xs text-slate-500">—</span>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-right">
+							<td class="px-3 md:px-4 py-2 md:py-3 text-right hidden md:table-cell">
 								{#if recommendations.has(b.categoryId)}
 									<div class="flex items-center justify-end gap-2">
 										<span class="text-slate-700 dark:text-slate-200" title="3-month average">{fmt(recommendations.get(b.categoryId)?.avg3m ?? 0)}</span>
@@ -800,7 +810,7 @@
 									<span class="text-xs text-slate-500">—</span>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-right">
+							<td class="px-3 md:px-4 py-2 md:py-3 text-right hidden lg:table-cell">
 								{#key `${b.actualAmount}-${b.plannedAmount}`}
 									{#if b.plannedAmount > 0}
 										<div class="flex items-center justify-end gap-2">
@@ -819,7 +829,7 @@
 									{/if}
 								{/key}
 							</td>
-							<td class="px-4 py-3 text-right">
+							<td class="px-3 md:px-4 py-2 md:py-3 text-right hidden sm:table-cell">
 								<button
 									type="button"
 									class="rounded-lg border px-3 py-1.5 text-xs transition border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
@@ -865,14 +875,14 @@
 							</div>
 						</div>
 						<div class="rounded-xl border border-slate-200 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
-							<div class="grid gap-4 md:grid-cols-2" style="height: 320px;">
+							<div class="grid gap-4 md:grid-cols-2">
 								<div class="rounded-lg border border-slate-200 p-2 dark:border-slate-800">
 									<h4 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Bar (Planned vs Actual)</h4>
-									<div class="h-[260px]"><canvas bind:this={barCanvas}></canvas></div>
+									<div class="h-64 sm:h-72 md:h-64 lg:h-72 xl:h-80"><canvas bind:this={barCanvas}></canvas></div>
 								</div>
 								<div class="rounded-lg border border-slate-200 p-2 dark:border-slate-800">
 									<h4 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Pie (Actual distribution)</h4>
-									<div class="h-[260px]"><canvas bind:this={pieCanvas}></canvas></div>
+									<div class="h-64 sm:h-72 md:h-64 lg:h-72 xl:h-80"><canvas bind:this={pieCanvas}></canvas></div>
 								</div>
 							</div>
 						</div>

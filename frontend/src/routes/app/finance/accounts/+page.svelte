@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
+  import { clickOutside } from '$lib/utils/clickOutside';
   import AccountModal from '$lib/ui/AccountModal.svelte';
   import { toasts } from '$lib/ui/toast';
   import {
@@ -20,6 +21,7 @@
   let modalOpen = false;
   let modalSaving = false;
   let editingAccount: FinanceAccount | null = null;
+  let moreOpen = false;
 
   let locale = browser ? navigator.language : 'en-US';
   let currency = 'USD';
@@ -141,13 +143,23 @@
       <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Accounts</h2>
       <p class="text-sm text-slate-600 dark:text-slate-400">Keep track of balances across banks, cards, and cash.</p>
     </div>
-    <button
-      type="button"
-      class="rounded-md border border-indigo-600 bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-700 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      on:click={openCreate}
-    >
-      New account
-    </button>
+    <div class="hidden sm:block">
+      <button type="button" class="rounded-md border border-indigo-600 bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-700 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" on:click={openCreate}>
+        New account
+      </button>
+    </div>
+    <div class="sm:hidden relative" use:clickOutside={{ enabled: moreOpen, handler: () => (moreOpen = false) }}>
+      <button type="button" class="rounded-lg border px-3 py-2 text-sm border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white" on:click={() => (moreOpen = !moreOpen)} aria-haspopup="menu" aria-expanded={moreOpen}>
+        More
+      </button>
+      {#if moreOpen}
+        <div class="absolute right-0 z-10 mt-2 w-40 rounded-md border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900/90">
+          <button type="button" class="block w-full rounded px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" on:click={() => { moreOpen = false; openCreate(); }}>
+            New account
+          </button>
+        </div>
+      {/if}
+    </div>
   </div>
 
   <div class="grid gap-4 sm:grid-cols-3">
@@ -185,27 +197,27 @@
       <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
           <tr>
-            <th class="px-4 py-3 text-left">Name</th>
+            <th class="px-3 md:px-4 py-2 md:py-3 text-left">Name</th>
             <th class="px-4 py-3 text-left hidden sm:table-cell">Type</th>
             <th class="px-4 py-3 text-left hidden md:table-cell">Initial</th>
-            <th class="px-4 py-3 text-left">Balance</th>
+            <th class="px-3 md:px-4 py-2 md:py-3 text-left">Balance</th>
             <th class="px-4 py-3 text-left hidden md:table-cell">Income</th>
             <th class="px-4 py-3 text-left hidden md:table-cell">Expense</th>
             <th class="px-4 py-3 text-left hidden lg:table-cell">Updated</th>
-            <th class="px-4 py-3 text-right">Actions</th>
+            <th class="px-3 md:px-4 py-2 md:py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-900/70">
           {#each accounts as account (account.id)}
             <tr>
-              <td class="px-4 py-3 text-slate-900 dark:text-slate-100">{account.name}</td>
+              <td class="px-3 md:px-4 py-2 md:py-3 text-slate-900 dark:text-slate-100">{account.name}</td>
               <td class="px-4 py-3 text-slate-700 dark:text-slate-300 hidden sm:table-cell">{account.type}</td>
               <td class="px-4 py-3 text-slate-800 dark:text-slate-200 hidden md:table-cell">{formatAmount(account.initialBalance ?? 0)}</td>
-              <td class="px-4 py-3 text-slate-800 dark:text-slate-200">{formatAmount(account.balance ?? 0)}</td>
+              <td class="px-3 md:px-4 py-2 md:py-3 text-slate-800 dark:text-slate-200">{formatAmount(account.balance ?? 0)}</td>
               <td class="px-4 py-3 text-emerald-600 dark:text-emerald-300 hidden md:table-cell">{formatAmount(account.totals?.income ?? 0)}</td>
               <td class="px-4 py-3 text-rose-600 dark:text-red-300 hidden md:table-cell">{formatAmount(account.totals?.expense ?? 0)}</td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-400 hidden lg:table-cell">{formatDate(account.createdAt)}</td>
-              <td class="px-4 py-3 text-right">
+              <td class="px-3 md:px-4 py-2 md:py-3 text-right">
                 <div class="flex justify-end gap-2">
                   <button
                     type="button"
@@ -221,6 +233,15 @@
                   >
                     Delete
                   </button>
+                </div>
+              </td>
+            </tr>
+            <!-- Mobile card-like inline actions -->
+            <tr class="sm:hidden">
+              <td colspan="8" class="px-3 pb-3 text-right">
+                <div class="inline-flex gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-800 dark:bg-slate-900/70">
+                  <button type="button" class="rounded px-2 py-1 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" on:click={() => openEdit(account)}>Edit</button>
+                  <button type="button" class="rounded px-2 py-1 text-rose-700 hover:bg-rose-50 dark:text-red-300 dark:hover:bg-red-900/30" on:click={() => handleDelete(account)}>Delete</button>
                 </div>
               </td>
             </tr>

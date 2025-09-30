@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
+  import { clickOutside } from '$lib/utils/clickOutside';
   import TransactionModal from '$lib/ui/TransactionModal.svelte';
   import { toasts } from '$lib/ui/toast';
   import {
@@ -45,6 +46,7 @@
   let modalOpen = false;
   let modalSaving = false;
   let showFilters = false;
+  let moreOpen = false;
 
   let locale = browser ? navigator.language : 'en-US';
   let currency = 'USD';
@@ -270,22 +272,30 @@
   <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Transactions</h2>
   <p class="text-sm text-slate-600 dark:text-slate-400">Filter by account, category, type, and export finance data.</p>
     </div>
-    <div class="flex flex-wrap gap-2">
-      <button
-        type="button"
-  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition disabled:opacity-60 border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
-        on:click={handleExportCsv}
-        disabled={exporting || loading}
-      >
+    <!-- Desktop toolbar -->
+    <div class="hidden sm:flex flex-wrap gap-2">
+      <button type="button" class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition disabled:opacity-60 border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white" on:click={handleExportCsv} disabled={exporting || loading}>
         {exporting ? 'Exporting...' : 'Export CSV'}
       </button>
-      <button
-        type="button"
-        class="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
-        on:click={openModal}
-      >
+      <button type="button" class="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600" on:click={openModal}>
         New transaction
       </button>
+    </div>
+    <!-- Mobile More menu -->
+    <div class="sm:hidden relative" use:clickOutside={{ enabled: moreOpen, handler: () => (moreOpen = false) }}>
+      <button type="button" class="rounded-lg border px-3 py-2 text-sm border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white" on:click={() => (moreOpen = !moreOpen)} aria-haspopup="menu" aria-expanded={moreOpen}>
+        More
+      </button>
+      {#if moreOpen}
+        <div class="absolute right-0 z-10 mt-2 w-40 rounded-md border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900/90">
+          <button type="button" class="block w-full rounded px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" on:click={() => { moreOpen = false; handleExportCsv(); }} disabled={exporting || loading}>
+            {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
+          <button type="button" class="block w-full rounded px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" on:click={() => { moreOpen = false; openModal(); }}>
+            New transaction
+          </button>
+        </div>
+      {/if}
     </div>
   </div>
 
@@ -414,18 +424,18 @@
       <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
         <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-950/80 dark:text-slate-400">
           <tr>
-            <th class="px-4 py-3 text-left">Date</th>
-            <th class="px-4 py-3 text-left">Description</th>
+            <th class="px-3 md:px-4 py-2 md:py-3 text-left">Date</th>
+            <th class="px-3 md:px-4 py-2 md:py-3 text-left">Description</th>
             <th class="px-4 py-3 text-left hidden sm:table-cell">Category</th>
             <th class="px-4 py-3 text-left hidden md:table-cell">Account</th>
-            <th class="px-4 py-3 text-left">Amount <span title={currencyName} class="text-[10px] text-slate-500 align-middle">({currency})</span></th>
+            <th class="px-3 md:px-4 py-2 md:py-3 text-left">Amount <span title={currencyName} class="text-[10px] text-slate-500 align-middle">({currency})</span></th>
           </tr>
         </thead>
   <tbody class="divide-y divide-slate-200 dark:divide-slate-900/70">
           {#each transactions as transaction (transaction.id)}
             <tr>
-              <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{formatDate(transaction.occurredAt)}</td>
-              <td class="px-4 py-3">
+              <td class="px-3 md:px-4 py-2 md:py-3 text-slate-700 dark:text-slate-200">{formatDate(transaction.occurredAt)}</td>
+              <td class="px-3 md:px-4 py-2 md:py-3">
                 <div class="text-slate-900 dark:text-slate-100">{transaction.notes ?? '(No description)'}</div>
                 {#if transaction.tags.length}
                   <div class="mt-1 text-xs text-slate-500">{transaction.tags.join(', ')}</div>
@@ -438,8 +448,16 @@
                   <div class="text-xs text-slate-500">→ {transaction.transferAccountName}</div>
                 {/if}
               </td>
-              <td class={`px-4 py-3 text-right font-semibold ${amountClass(transaction)}`} title={currencyName}>
+              <td class={`px-3 md:px-4 py-2 md:py-3 text-right font-semibold ${amountClass(transaction)}`} title={currencyName}>
                 {formatAmount(transaction)}
+              </td>
+            </tr>
+            <!-- Mobile inline actions under row -->
+            <tr class="sm:hidden">
+              <td colspan="4" class="px-3 pb-3 text-right">
+                <div class="inline-flex gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-800 dark:bg-slate-900/70">
+                  <button type="button" class="rounded px-2 py-1 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" on:click={openModal}>Edit</button>
+                </div>
               </td>
             </tr>
           {/each}
