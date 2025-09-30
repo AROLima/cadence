@@ -47,36 +47,6 @@ async function bootstrap() {
     }),
   );
 
-  // Rate limiting: global and stricter on auth routes to mitigate brute force
-  const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000); // 15m
-  const max = Number(process.env.RATE_LIMIT_MAX ?? 300);
-  const authMax = Number(process.env.RATE_LIMIT_AUTH_MAX ?? 100);
-
-  app.use(
-    rateLimit({
-      windowMs,
-      max,
-      standardHeaders: true,
-      legacyHeaders: false,
-    }),
-  );
-  app.use(
-    '/auth',
-    rateLimit({
-      windowMs,
-      max: authMax,
-      standardHeaders: true,
-      legacyHeaders: false,
-      message: 'Too many auth attempts from this IP, please try again later.',
-    }),
-  );
-
-  // If behind a proxy (e.g., in production), optionally trust it for correct IPs
-  if (process.env.TRUST_PROXY) {
-    const expressApp = app.getHttpAdapter().getInstance();
-    expressApp.set('trust proxy', Number(process.env.TRUST_PROXY));
-  }
-
   // CORS: use ALLOWED_ORIGINS (comma-separated) in prod; allow common dev ports otherwise
   const envOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
@@ -92,6 +62,7 @@ async function bootstrap() {
 
   const allowedOrigins = isProd && envOrigins.length ? envOrigins : devOrigins;
 
+  // Place CORS BEFORE any middleware that may send a response (e.g., rate limiting)
   app.enableCors({
     origin: (
       requestOrigin: string | undefined,
@@ -117,7 +88,47 @@ async function bootstrap() {
       'X-Requested-With',
     ],
     exposedHeaders: ['Content-Disposition'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
+
+  // Rate limiting: global and stricter on auth routes to mitigate brute force
+  const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000); // 15m
+  const max = Number(process.env.RATE_LIMIT_MAX ?? (isProd ? 300 : 3000));
+  const authMax = Number(
+    process.env.RATE_LIMIT_AUTH_MAX ?? (isProd ? 100 : 800),
+  );
+
+  app.use(
+    rateLimit({
+      windowMs,
+      max,
+      standardHeaders: true,
+      legacyHeaders: false,
+      // Do not rate-limit CORS preflight
+      skip: (req) => req.method === 'OPTIONS',
+    }),
+  );
+  app.use(
+    '/auth',
+    rateLimit({
+      windowMs,
+      max: authMax,
+      standardHeaders: true,
+      legacyHeaders: false,
+      // Do not rate-limit CORS preflight
+      skip: (req) => req.method === 'OPTIONS',
+      message: 'Too many auth attempts from this IP, please try again later.',
+    }),
+  );
+
+  // If behind a proxy (e.g., in production), optionally trust it for correct IPs
+  if (process.env.TRUST_PROXY) {
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.set('trust proxy', Number(process.env.TRUST_PROXY));
+  }
+
+  // (CORS already configured above)
 
   // Swagger: enabled by default in dev; gate via SWAGGER_ENABLED in prod
   const swaggerEnabled = process.env.SWAGGER_ENABLED

@@ -60,10 +60,28 @@ export async function listAccounts(): Promise<FinanceAccount[]> {
   return data ?? [];
 }
 
+// Simple session cache with TTL and in-flight dedupe for category tree
+let categoryTreeCache: { data: FinanceCategoryNode[]; exp: number } | null = null;
+let categoryTreeInFlight: Promise<FinanceCategoryNode[]> | null = null;
+const CATEGORY_TTL_MS = 60_000; // 1 minute
+
 export async function getCategoryTree(): Promise<FinanceCategoryNode[]> {
-  const response = await apiFetch('/finance/categories/tree');
-  const { data } = await parseResponse<FinanceCategoryNode[]>(response, 'Failed to load categories');
-  return data ?? [];
+  const now = Date.now();
+  if (categoryTreeCache && categoryTreeCache.exp > now) {
+    return categoryTreeCache.data;
+  }
+  if (categoryTreeInFlight) {
+    return categoryTreeInFlight;
+  }
+  categoryTreeInFlight = (async () => {
+    const response = await apiFetch('/finance/categories/tree');
+    const { data } = await parseResponse<FinanceCategoryNode[]>(response, 'Failed to load categories');
+    const safe = data ?? [];
+    categoryTreeCache = { data: safe, exp: Date.now() + CATEGORY_TTL_MS };
+    categoryTreeInFlight = null;
+    return safe;
+  })();
+  return categoryTreeInFlight;
 }
 
 function buildQuery(filters: TransactionFilters = {}, pagination: PaginationInput = {}): string {
